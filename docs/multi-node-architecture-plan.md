@@ -3,11 +3,24 @@
 > **关联技术方案**: [multi-node-architecture.md](./multi-node-architecture.md)
 > **最后更新**: 2025-12-22
 
+## 依赖关系
+
+```
+Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 4.5 ──► Phase 5 ──► Phase 6
+   │            │                         │           │            │
+   │            │                         │           │            └─ 依赖 Phase 1.5 (UserTimeTracker)
+   │            │                         │           └─ 依赖 Phase 3 (NodeService)
+   │            │                         └─ 依赖 Phase 1 (Node 模型)
+   │            └─ 依赖 Phase 1 (Client 模型扩展)
+   └─ 无前置依赖
+```
+
 ## 实现阶段
 
 ### Phase 1: 数据库与模型
 
 > 参考: [3. 数据库设计](./multi-node-architecture.md#3-数据库设计)
+> **依赖**: 无
 
 - [ ] 新增 `database/model/node.go` (Node, NodeToken, NodeStats, ClientOnline)
 - [ ] 修改 `database/model/model.go` (Client 扩展, Stats.NodeId)
@@ -17,6 +30,7 @@
 ### Phase 1.5: 核心层改造 (UAP-Aware)
 
 > 参考: [6. 核心层扩展](./multi-node-architecture.md#6-核心层扩展-uap-aware)
+> **依赖**: Phase 1 (Client 模型扩展)
 
 - [ ] 修改 `core/tracker_conn.go` (扩展 ConnectionInfo: User, SourceIP, ConnectedAt)
 - [ ] 修改 `core/tracker_stats.go` (新增 UserTimeTracker)
@@ -24,6 +38,7 @@
 ### Phase 2: 配置与启动
 
 > 参考: [9. 配置说明](./multi-node-architecture.md#9-配置说明)
+> **依赖**: Phase 1.5
 
 - [ ] 修改 `config/config.go` (节点配置)
 - [ ] 修改 `cmd/cmd.go` (命令行参数)
@@ -32,6 +47,7 @@
 ### Phase 3: 主节点服务
 
 > 参考: [4. 接口设计](./multi-node-architecture.md#4-接口设计)
+> **依赖**: Phase 2, Phase 1 (Node 模型)
 
 - [ ] 新增 `service/node.go`
 - [ ] 新增 `api/nodeHandler.go`
@@ -43,6 +59,7 @@
 ### Phase 4: 从节点同步
 
 > 参考: [5. 核心流程](./multi-node-architecture.md#5-核心流程)
+> **依赖**: Phase 3 (NodeService 提供 Token 验证、配置获取)
 
 - [ ] 新增 `service/sync.go`
 - [ ] 修改 `api/apiHandler.go` (只读检查)
@@ -50,6 +67,7 @@
 ### Phase 4.5: CronJob 扩展 (UAP-Aware)
 
 > 参考: [6.3 CronJob 扩展](./multi-node-architecture.md#63-cronjob-扩展)
+> **依赖**: Phase 1.5 (UserTimeTracker), Phase 4
 
 - [ ] 新增 `cronjob/timeTrackJob.go` (时长追踪任务)
 - [ ] 新增 `cronjob/resetJob.go` (重置策略任务)
@@ -59,6 +77,7 @@
 ### Phase 5: 前端改造
 
 > 参考: [8.3 前端 UI 改造说明](./multi-node-architecture.md#83-前端-ui-改造说明)
+> **依赖**: Phase 4.5 (后端 API 就绪)
 
 **多节点管理 UI:**
 - [ ] 新增 `frontend/src/views/Nodes.vue` (节点管理页面)
@@ -78,9 +97,14 @@
 - [ ] 修改 `frontend/src/views/Clients.vue` (显示 UAP 扩展字段列)
 - [ ] 修改 `frontend/src/views/Settings.vue` (添加 Webhook 配置区域)
 
+**国际化 (i18n):**
+- [ ] 修改 `frontend/src/locales/en.json` (添加 nodes、apikeys 等翻译)
+- [ ] 修改 `frontend/src/locales/zh-Hans.json` (添加节点管理、API 密钥等翻译)
+
 ### Phase 6: UAP Backend 对接
 
 > 参考: [13. UAP Backend 对接](./multi-node-architecture.md#13-uap-backend-对接)
+> **依赖**: Phase 5
 
 - [ ] 修改 `service/client.go` (UUID 同步到 Config)
 - [ ] 修改 `sub/subService.go` (订阅查询改用 UUID)
@@ -99,6 +123,6 @@
 | Phase 3 | 6 | 0 | 0% |
 | Phase 4 | 2 | 0 | 0% |
 | Phase 4.5 | 4 | 0 | 0% |
-| Phase 5 | 14 | 0 | 0% |
+| Phase 5 | 16 | 0 | 0% |
 | Phase 6 | 4 | 0 | 0% |
-| **总计** | **39** | **0** | **0%** |
+| **总计** | **41** | **0** | **0%** |

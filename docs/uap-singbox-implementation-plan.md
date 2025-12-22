@@ -21,9 +21,10 @@
 
 ### Step 3: 协议实现
 
-> 参考: [4.1 需要新增的文件](./uap-singbox-implementation.md#41-需要新增的文件)
+> 参考: [4.1 需要新增的文件](./uap-singbox-implementation.md#41-需要新增的文件), [4.3.3 协议实现](./uap-singbox-implementation.md#433-协议实现-从-vless-复制修改)
 
 - [ ] 创建 `protocol/uap/` 目录
+- [ ] 实现 `protocol/uap/protocol.go` (协议编解码，版本号、UUID、Addons 处理)
 - [ ] 实现 `protocol/uap/conn.go` (连接处理)
 - [ ] 实现 `protocol/uap/inbound.go` (Inbound 实现)
 - [ ] 实现 `protocol/uap/outbound.go` (Outbound 实现)
@@ -39,6 +40,7 @@
 
 > 参考: [4.2 需要修改的文件](./uap-singbox-implementation.md#42-需要修改的文件)
 
+- [ ] 修改 `option/inbound.go` 添加 UAPInboundOptions
 - [ ] 修改 `option/outbound.go` 添加 UAPOutboundOptions
 - [ ] 修改 `include/outbound_default.go` 注册 UAP outbound
 - [ ] 创建 `include/uap.go` (UAP 构建标签)
@@ -69,9 +71,9 @@
 |------|--------|--------|------|
 | Step 1 | 2 | 1 | 50% |
 | Step 2 | 1 | 0 | 0% |
-| Step 3 | 5 | 0 | 0% |
+| Step 3 | 6 | 0 | 0% |
 | Step 4 | 1 | 0 | 0% |
-| Step 5 | 3 | 0 | 0% |
+| Step 5 | 4 | 0 | 0% |
 | Step 6 | 2 | 0 | 0% |
 | Step 7 | 6 | 0 | 0% |
-| **总计** | **20** | **1** | **5%** |
+| **总计** | **22** | **1** | **5%** |

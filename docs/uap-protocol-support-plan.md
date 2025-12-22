@@ -24,7 +24,8 @@
 
 > 参考: [4. 前端修改](./uap-protocol-support.md#4-前端修改)
 
-- [ ] 添加 UAP 类型到 Inbound 下拉选项
+- [ ] 修改 `frontend/src/types/inbound.ts` 添加 UAP 类型定义
+- [ ] 修改 `frontend/src/layouts/modals/Inbound.vue` 添加 UAP 配置区域
 - [ ] 复用 VLESS 的配置界面组件
 - [ ] 添加 i18n 翻译 (en.json, zh-Hans.json)
 
@@ -54,7 +55,7 @@
 | 阶段 | 任务数 | 完成数 | 进度 |
 |------|--------|--------|------|
 | Phase 1 | 5 | 0 | 0% |
-| Phase 2 | 3 | 0 | 0% |
+| Phase 2 | 4 | 0 | 0% |
 | Phase 3 | 4 | 0 | 0% |
 | Phase 4 | 5 | 0 | 0% |
-| **总计** | **17** | **0** | **0%** |
+| **总计** | **18** | **0** | **0%** |
