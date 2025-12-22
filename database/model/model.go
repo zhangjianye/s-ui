@@ -35,8 +35,8 @@ type Client struct {
 	Up       int64           `json:"up" form:"up"`
 	Desc     string          `json:"desc" form:"desc"`
 	Group    string          `json:"group" form:"group"`
-	// UAP 扩展字段
-	UUID                 string `json:"uuid" form:"uuid" gorm:"unique"`
+	// UAP 扩展字段 (UUID 为空时不受唯一约束，非空时必须唯一)
+	UUID                 string `json:"uuid" form:"uuid" gorm:"index"`
 	IsPremium            bool   `json:"isPremium" form:"isPremium" gorm:"default:false"`
 	TimeLimit            int64  `json:"timeLimit" form:"timeLimit" gorm:"default:0"`
 	TimeUsed             int64  `json:"timeUsed" form:"timeUsed" gorm:"default:0"`

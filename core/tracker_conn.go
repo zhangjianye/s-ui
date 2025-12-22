@@ -46,7 +46,7 @@ func (c *ConnTracker) RoutedConnection(ctx context.Context, conn net.Conn, metad
 		Inbound:     metadata.Inbound,
 		Type:        "tcp",
 		User:        metadata.User,
-		SourceIP:    metadata.Source.Addr().String(),
+		SourceIP:    metadata.Source.String(),
 		ConnectedAt: time.Now().Unix(),
 	}
 
@@ -63,7 +63,7 @@ func (c *ConnTracker) RoutedPacketConnection(ctx context.Context, conn network.P
 		Inbound:     metadata.Inbound,
 		Type:        "udp",
 		User:        metadata.User,
-		SourceIP:    metadata.Source.Addr().String(),
+		SourceIP:    metadata.Source.String(),
 		ConnectedAt: time.Now().Unix(),
 	}
 
