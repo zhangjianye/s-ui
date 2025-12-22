@@ -82,10 +82,7 @@ func ParseFlags() bool {
 }
 
 func ParseCmd() {
-	// 先解析 flags (已在 init 中注册)
-	if !ParseFlags() {
-		return
-	}
+	// 注意: ParseFlags() 已在 main.go 中调用，这里不再重复调用
 
 	adminCmd := flag.NewFlagSet("admin", flag.ExitOnError)
 	settingCmd := flag.NewFlagSet("setting", flag.ExitOnError)

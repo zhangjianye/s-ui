@@ -108,8 +108,8 @@ func SetNodeId(id string) {
 }
 
 // SetNodeName 设置节点名称
-func SetNodeName(name string) {
-	nodeName = name
+func SetNodeName(n string) {
+	nodeName = n
 }
 
 // SetMasterAddr 设置主节点地址
