@@ -40,9 +40,9 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [9. 配置说明](./multi-node-architecture.md#9-配置说明)
 > **依赖**: Phase 1.5
 
-- [ ] 修改 `config/config.go` (节点配置)
-- [ ] 修改 `cmd/cmd.go` (命令行参数)
-- [ ] 修改 `app/app.go` (初始化流程)
+- [x] 修改 `config/config.go` (节点配置)
+- [x] 修改 `cmd/cmd.go` (命令行参数)
+- [x] 修改 `app/app.go` (初始化流程)
 
 ### Phase 3: 主节点服务
 
@@ -119,10 +119,10 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 |------|--------|--------|------|
 | Phase 1 | 4 | 4 | 100% |
 | Phase 1.5 | 2 | 2 | 100% |
-| Phase 2 | 3 | 0 | 0% |
+| Phase 2 | 3 | 3 | 100% |
 | Phase 3 | 6 | 0 | 0% |
 | Phase 4 | 2 | 0 | 0% |
 | Phase 4.5 | 4 | 0 | 0% |
 | Phase 5 | 16 | 0 | 0% |
 | Phase 6 | 4 | 0 | 0% |
-| **总计** | **41** | **6** | **15%** |
+| **总计** | **41** | **9** | **22%** |
