@@ -32,8 +32,8 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [6. 核心层扩展](./multi-node-architecture.md#6-核心层扩展-uap-aware)
 > **依赖**: Phase 1 (Client 模型扩展)
 
-- [ ] 修改 `core/tracker_conn.go` (扩展 ConnectionInfo: User, SourceIP, ConnectedAt)
-- [ ] 修改 `core/tracker_stats.go` (新增 UserTimeTracker)
+- [x] 修改 `core/tracker_conn.go` (扩展 ConnectionInfo: User, SourceIP, ConnectedAt)
+- [x] 修改 `core/tracker_stats.go` (新增 UserTimeTracker)
 
 ### Phase 2: 配置与启动
 
@@ -118,11 +118,11 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 | 阶段 | 任务数 | 完成数 | 进度 |
 |------|--------|--------|------|
 | Phase 1 | 4 | 4 | 100% |
-| Phase 1.5 | 2 | 0 | 0% |
+| Phase 1.5 | 2 | 2 | 100% |
 | Phase 2 | 3 | 0 | 0% |
 | Phase 3 | 6 | 0 | 0% |
 | Phase 4 | 2 | 0 | 0% |
 | Phase 4.5 | 4 | 0 | 0% |
 | Phase 5 | 16 | 0 | 0% |
 | Phase 6 | 4 | 0 | 0% |
-| **总计** | **41** | **4** | **10%** |
+| **总计** | **41** | **6** | **15%** |

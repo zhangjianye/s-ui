@@ -143,3 +143,69 @@ func (c *StatsTracker) GetStats() *[]model.Stats {
 	}
 	return &s
 }
+
+// UserTimeTracker 用户在线时长追踪器
+type UserTimeTracker struct {
+	access     sync.Mutex
+	onlineTime map[string]int64 // user -> 本周期在线秒数
+	lastUpdate map[string]int64 // user -> 上次更新时间戳
+}
+
+// NewUserTimeTracker 创建用户时长追踪器
+func NewUserTimeTracker() *UserTimeTracker {
+	return &UserTimeTracker{
+		onlineTime: make(map[string]int64),
+		lastUpdate: make(map[string]int64),
+	}
+}
+
+// UpdateOnlineTime 更新用户在线时长
+// 每次调用时，为当前在线的用户累加时间间隔
+// interval: 采集间隔秒数 (默认 10 秒)
+func (t *UserTimeTracker) UpdateOnlineTime(onlineUsers []string, interval int64) {
+	t.access.Lock()
+	defer t.access.Unlock()
+
+	now := time.Now().Unix()
+	onlineSet := make(map[string]bool)
+	for _, user := range onlineUsers {
+		onlineSet[user] = true
+	}
+
+	// 为在线用户累加时间
+	for user := range onlineSet {
+		if _, exists := t.onlineTime[user]; !exists {
+			t.onlineTime[user] = 0
+		}
+		t.onlineTime[user] += interval
+		t.lastUpdate[user] = now
+	}
+}
+
+// GetAndResetTime 获取并重置用户在线时长
+// 返回 map[user]秒数，同时清空累计数据
+func (t *UserTimeTracker) GetAndResetTime() map[string]int64 {
+	t.access.Lock()
+	defer t.access.Unlock()
+
+	result := make(map[string]int64)
+	for user, seconds := range t.onlineTime {
+		if seconds > 0 {
+			result[user] = seconds
+		}
+	}
+
+	// 重置
+	t.onlineTime = make(map[string]int64)
+	t.lastUpdate = make(map[string]int64)
+
+	return result
+}
+
+// GetOnlineTime 获取用户当前周期的在线时长 (不重置)
+func (t *UserTimeTracker) GetOnlineTime(user string) int64 {
+	t.access.Lock()
+	defer t.access.Unlock()
+
+	return t.onlineTime[user]
+}
