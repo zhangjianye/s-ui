@@ -1,5 +1,8 @@
 # UAP 协议 sing-box 实现方案
 
+> **文档版本**: v1.0
+> **最后更新**: 2025-12-22
+
 ## 1. 概述
 
 本文档说明如何在 sing-box 中实现 UAP 协议，以及 sing-box 和 hiddify-sing-box 的区别。
@@ -9,12 +12,16 @@
 | 仓库 | 说明 | 地址 |
 |------|------|------|
 | sing-box | 官方 sing-box | https://github.com/SagerNet/sing-box |
-| hiddify-sing-box | Hiddify 团队 fork | https://github.com/hiddify/hiddify-sing-box |
-| hiddify-sing-box-main | 我们的版本 (含 UAP) | 本地 `~/work/projects/uap/hiddify-sing-box-main` |
+| hiddify-sing-box | Hiddify 团队 fork (仅作参考) | https://github.com/hiddify/hiddify-sing-box |
+| uap-sing-box | **UAP 官方版本** (基于官方 sing-box) | https://git.uap.io/uap/uap-sing-box |
+
+> **代码来源说明**: UAP 协议是我们自主开发的协议，基于 VLESS 协议规范重新实现。
+> 本地目录 `~/work/projects/uap/hiddify-sing-box-main` 包含 UAP 协议源码，
+> 命名沿用历史，实际与 hiddify-sing-box 无关。UAP 代码将移植到 uap-sing-box 中。
 
 ### 1.2 UAP 协议简介
 
-UAP (Universal Access Protocol) 是基于 VLESS 的自定义协议：
+UAP (Universal Access Protocol) 是我们自主开发的协议，基于 VLESS 协议规范：
 
 | 项目 | VLESS | UAP |
 |------|-------|-----|
@@ -33,7 +40,7 @@ UAP (Universal Access Protocol) 是基于 VLESS 的自定义协议：
 | 项目 | sing-box (官方) | hiddify-sing-box |
 |------|-----------------|------------------|
 | 当前版本 | v1.13.x | v1.9.4 |
-| Go 版本 | go 1.24.7 | go 1.21.4 |
+| Go 版本 | go 1.25.5 | go 1.21.4 |
 | 更新频率 | 活跃 (每周) | 较慢 |
 | 最后更新 | 2024年12月 | 2024年9月 |
 
@@ -211,7 +218,7 @@ sing-box/
 | 文件 | 修改内容 |
 |------|----------|
 | `constant/proxy.go` | 添加 `TypeUAP = "uap"` |
-| `protocol/uap/` | 从 hiddify-sing-box-main 移植 |
+| `protocol/uap/` | 添加 UAP 协议实现 (自研代码) |
 | `option/outbound.go` | 添加 `UAPOutboundOptions` |
 | `include/outbound_default.go` | 注册 UAP outbound |
 
@@ -332,31 +339,9 @@ func ReadRequest(reader io.Reader) (*Request, error) {
 }
 ```
 
-### 4.4 实现步骤
+### 4.4 实现计划
 
-```
-Step 1: Fork 官方 sing-box
-        │
-        ▼
-Step 2: 添加 constant/proxy.go 中的 TypeUAP
-        │
-        ▼
-Step 3: 创建 protocol/uap/ 目录
-        │  - 从 hiddify-sing-box-main/protocol/uap/ 复制
-        │  - 适配新的代码结构 (import 路径等)
-        │
-        ▼
-Step 4: 创建 option/uap.go
-        │
-        ▼
-Step 5: 修改 include/ 注册 UAP
-        │
-        ▼
-Step 6: 编译测试
-        │
-        ▼
-Step 7: 创建测试配置验证
-```
+> 详细实现计划请参考: [uap-singbox-implementation-plan.md](./uap-singbox-implementation-plan.md)
 
 ---
 
@@ -385,20 +370,26 @@ hiddify-sing-box/
         └── vision_utls.go
 ```
 
-### 5.2 从 hiddify-sing-box-main 复制的文件
+### 5.2 复制 UAP 协议文件
 
-已有的 UAP 实现可以直接使用：
+已有的 UAP 实现可以直接使用（源目录为历史命名）：
 
 ```bash
+# 源目录 (历史命名，实际是 UAP 自研代码)
+UAP_SRC=~/work/projects/uap/hiddify-sing-box-main
+
+# 目标目录 (新的 uap-sing-box 仓库)
+UAP_DEST=~/work/projects/uap/uap-sing-box
+
 # 复制协议实现
-cp -r hiddify-sing-box-main/protocol/uap hiddify-sing-box/protocol/
+cp -r $UAP_SRC/protocol/uap $UAP_DEST/protocol/
 
 # 复制 inbound/outbound
-cp hiddify-sing-box-main/inbound/uap.go hiddify-sing-box/inbound/
-cp hiddify-sing-box-main/outbound/uap.go hiddify-sing-box/outbound/
+cp $UAP_SRC/inbound/uap.go $UAP_DEST/inbound/
+cp $UAP_SRC/outbound/uap.go $UAP_DEST/outbound/
 
 # 复制配置选项
-cp hiddify-sing-box-main/option/uap.go hiddify-sing-box/option/
+cp $UAP_SRC/option/uap.go $UAP_DEST/option/
 ```
 
 ### 5.3 需要修改的文件
@@ -482,30 +473,127 @@ cp hiddify-sing-box-main/option/uap.go hiddify-sing-box/option/
 
 ---
 
-## 7. 测试验证
+## 7. 编译与部署
 
-### 7.1 编译
+### 7.1 编译环境
+
+**前置要求:**
+- Go 1.22+ (推荐 1.24.x)
+- Git
+- Make (可选)
 
 ```bash
-# 官方 sing-box
-cd sing-box
-go build -tags "with_quic,with_wireguard,with_utls,with_reality_server,with_gvisor" ./cmd/sing-box
+# 检查 Go 版本
+go version
+
+# 克隆仓库
+git clone https://git.uap.io/uap/uap-sing-box.git
+cd uap-sing-box
+```
+
+### 7.2 编译命令
+
+```bash
+# 基本编译 (含 UAP 及常用功能)
+go build -tags "with_quic,with_wireguard,with_utls,with_reality_server,with_gvisor" \
+    -o sing-box ./cmd/sing-box
+
+# 精简编译 (仅核心功能)
+go build -tags "with_utls,with_reality_server" \
+    -o sing-box ./cmd/sing-box
 
 # 验证 UAP 支持
 ./sing-box version
 ```
 
-### 7.2 配置测试
+**编译标签说明:**
+| 标签 | 说明 |
+|------|------|
+| `with_quic` | QUIC 传输支持 (Hysteria2, TUIC) |
+| `with_wireguard` | WireGuard 出站支持 |
+| `with_utls` | uTLS 指纹伪装 |
+| `with_reality_server` | Reality 服务端支持 |
+| `with_gvisor` | Tun 模式 gVisor 支持 |
+
+### 7.3 配置测试
 
 ```bash
 # 检查配置语法
 ./sing-box check -c config.json
 
-# 运行服务
+# 格式化配置
+./sing-box format -c config.json
+
+# 前台运行 (调试)
 ./sing-box run -c config.json
 ```
 
-### 7.3 连接测试
+### 7.4 部署方式
+
+#### 方式一: systemd 服务
+
+```bash
+# 复制二进制文件
+sudo cp sing-box /usr/local/bin/
+sudo chmod +x /usr/local/bin/sing-box
+
+# 创建配置目录
+sudo mkdir -p /etc/sing-box
+sudo cp config.json /etc/sing-box/
+
+# 创建 systemd 服务
+sudo tee /etc/systemd/system/sing-box.service > /dev/null <<EOF
+[Unit]
+Description=sing-box service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/sing-box run -c /etc/sing-box/config.json
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启动服务
+sudo systemctl daemon-reload
+sudo systemctl enable sing-box
+sudo systemctl start sing-box
+sudo systemctl status sing-box
+```
+
+#### 方式二: Docker 部署
+
+```dockerfile
+# Dockerfile
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go build -tags "with_quic,with_utls,with_reality_server" \
+    -o sing-box ./cmd/sing-box
+
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /app/sing-box /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/sing-box"]
+CMD ["run", "-c", "/etc/sing-box/config.json"]
+```
+
+```bash
+# 构建镜像
+docker build -t uap-sing-box:latest .
+
+# 运行容器
+docker run -d --name sing-box \
+    -v /path/to/config.json:/etc/sing-box/config.json \
+    -p 443:443 -p 80:80 \
+    --restart unless-stopped \
+    uap-sing-box:latest
+```
+
+### 7.5 连接测试
 
 使用支持 UAP 的客户端连接并验证：
 - 连接建立
@@ -534,23 +622,19 @@ go build -tags "with_quic,with_wireguard,with_utls,with_reality_server,with_gvis
                     │           uap-sing-box              │
                     │                                     │
                     │  = 官方 sing-box                     │
-                    │  + UAP 协议 (从 hiddify-sing-box-main│
-                    │    移植 ~10 个文件)                  │
+                    │  + UAP 协议 (~10 个文件)             │
                     └─────────────────────────────────────┘
 ```
 
-### 8.2 工作量估算
-
-| 任务 | 预计时间 |
-|------|----------|
-| Fork 并设置仓库 | 0.5 天 |
-| 移植 UAP 代码 | 1 天 |
-| 适配新代码结构 | 0.5-1 天 |
-| 测试验证 | 0.5 天 |
-| **总计** | **2-3 天** |
-
-### 8.3 后续维护
+### 8.2 后续维护
 
 - 定期从官方 sing-box 合并更新
 - UAP 协议改动时同步更新
 - 保持与 S-UI 的兼容性
+
+---
+
+## 相关文档
+
+- [S-UI 多节点管理架构技术方案](./multi-node-architecture.md) - 主从节点架构、数据同步、UAP-Aware 设计
+- [S-UI UAP 协议支持技术方案](./uap-protocol-support.md) - S-UI 中 UAP 链接生成、前端配置、订阅输出

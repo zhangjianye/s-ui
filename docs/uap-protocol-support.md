@@ -1,10 +1,13 @@
 # S-UI UAP 协议支持技术方案
 
+> **文档版本**: v1.0
+> **最后更新**: 2025-12-22
+
 ## 1. 概述
 
 ### 1.1 背景
 
-UAP (Universal Access Protocol) 是基于 VLESS 协议的自定义协议，已在 hiddify-sing-box 中实现。本文档描述如何在 S-UI 中添加对 UAP 协议的支持。
+UAP (Universal Access Protocol) 是我们自主开发的协议，基于 VLESS 协议规范实现。本文档描述如何在 S-UI 中添加对 UAP 协议的支持。
 
 ### 1.2 UAP 与 VLESS 的差异
 
@@ -19,8 +22,21 @@ UAP (Universal Access Protocol) 是基于 VLESS 协议的自定义协议，已�
 ### 1.3 依赖
 
 S-UI 需要使用支持 UAP 协议的 sing-box 版本：
-- **hiddify-sing-box**: 已包含 UAP 协议实现
+- **uap-sing-box**: 基于官方 sing-box 添加 UAP 协议 (推荐)
 - 协议类型常量: `TypeUAP = "uap"`
+- 详见: [UAP sing-box 实现方案](./uap-singbox-implementation.md)
+
+### 1.4 客户端支持
+
+UAP 客户端目前正在开发中。UAP 链接的使用方式与 VLESS 类似：
+
+| 使用方式 | 说明 |
+|----------|------|
+| 直接导入 | `uap://...` 链接导入支持 UAP 的客户端 |
+| 订阅地址 | 从 S-UI 订阅服务获取 UAP 链接列表 |
+| 格式转换 | 转换为 sing-box 配置格式 (需客户端支持) |
+
+> **注意**: 标准 Clash/v2rayN 不支持 UAP 协议，需使用专用客户端。
 
 ---
 
@@ -360,31 +376,7 @@ proxies:
 
 ## 7. 实现计划
 
-### Phase 1: 后端链接生成
-
-- [ ] 修改 `util/genLink.go` 添加 UAP 支持
-- [ ] 修改 `sub/linkService.go` 支持 UAP 协议
-- [ ] 单元测试
-
-### Phase 2: 前端 Inbound 配置
-
-- [ ] 添加 UAP 类型到 Inbound 下拉选项
-- [ ] 复用 VLESS 的配置界面组件
-- [ ] 添加 i18n 翻译
-
-### Phase 3: 前端 Client 配置
-
-- [ ] Client 配置中添加 UAP 协议
-- [ ] UUID 生成和 Flow 选择
-- [ ] 添加 i18n 翻译
-
-### Phase 4: 测试验证
-
-- [ ] 创建 UAP Inbound
-- [ ] 创建 Client 并关联 UAP Inbound
-- [ ] 验证链接生成格式
-- [ ] 验证订阅输出
-- [ ] 使用支持 UAP 的客户端测试连接
+> 详细实现计划请参考: [uap-protocol-support-plan.md](./uap-protocol-support-plan.md)
 
 ---
 
@@ -460,10 +452,10 @@ uap://550e8400-e29b-41d4-a716-446655440000@example.com:443?security=reality&pbk=
 
 ## 附录
 
-### A. UAP 协议源码位置 (hiddify-sing-box)
+### A. UAP 协议源码位置 (uap-sing-box)
 
 ```
-hiddify-sing-box/
+uap-sing-box/
 ├── constant/
 │   └── proxy.go              # TypeUAP = "uap"
 ├── inbound/
@@ -492,3 +484,10 @@ hiddify-sing-box/
 - [VLESS 协议规范](https://xtls.github.io/development/protocols/vless.html)
 - [Reality 协议](https://github.com/XTLS/REALITY)
 - [sing-box 文档](https://sing-box.sagernet.org/)
+
+---
+
+## 相关文档
+
+- [S-UI 多节点管理架构技术方案](./multi-node-architecture.md) - 主从节点架构、数据同步、UAP-Aware 设计
+- [UAP 协议 sing-box 实现方案](./uap-singbox-implementation.md) - sing-box 中 UAP 协议的底层实现

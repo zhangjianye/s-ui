@@ -1,5 +1,8 @@
 # S-UI 多节点管理架构技术方案
 
+> **文档版本**: v1.0
+> **最后更新**: 2025-12-22
+
 ## 1. 概述
 
 ### 1.1 背景
@@ -28,6 +31,16 @@ S-UI 是一个基于 Sing-Box 的代理服务器管理面板，目前仅支持�
 
 - 主节点高可用（本期不涉及）
 - 从节点自动发现（需手动注册）
+
+### 1.5 术语约定
+
+| 术语 | 说明 | 使用场景 |
+|------|------|----------|
+| Node ID | 节点唯一标识 | 文档描述 |
+| `node_id` | 数据库字段名 | SQL/数据库 |
+| `NodeId` | Go 结构体字段 | 代码 |
+| 邀请码 | 节点注册凭证 | 用户界面 |
+| Token | 同上，技术描述 | API/代码 |
 
 ---
 
@@ -106,6 +119,8 @@ S-UI 是一个基于 Sing-Box 的代理服务器管理面板，目前仅支持�
 
 ## 3. 数据库设计
 
+> **注意**：以下新增表通过 GORM AutoMigrate 在首次启动时自动创建，无需手动执行 SQL。
+
 ### 3.1 新增表
 
 #### NodeToken 表（节点邀请码）
@@ -172,10 +187,11 @@ CREATE TABLE node_stats (
     memory      REAL,
     connections INTEGER,
     upload      INTEGER,
-    download    INTEGER,
-    INDEX idx_node_id (node_id),
-    INDEX idx_date_time (date_time)
+    download    INTEGER
 );
+
+CREATE INDEX idx_node_stats_node_id ON node_stats(node_id);
+CREATE INDEX idx_node_stats_date_time ON node_stats(date_time);
 ```
 
 #### ClientOnline 表（客户端在线状态）
@@ -188,10 +204,11 @@ CREATE TABLE client_onlines (
     inbound_tag  TEXT,
     source_ip    TEXT,                -- UAP: 设备 IP (用于设备数限制)
     connected_at INTEGER,             -- UAP: 连接时间 (用于时长计算)
-    last_seen    INTEGER NOT NULL,
-    INDEX idx_client_name (client_name),
-    INDEX idx_node_id (node_id)
+    last_seen    INTEGER NOT NULL
 );
+
+CREATE INDEX idx_client_onlines_client_name ON client_onlines(client_name);
+CREATE INDEX idx_client_onlines_node_id ON client_onlines(node_id);
 ```
 
 #### WebhookConfig 表（UAP 回调配置）
@@ -769,6 +786,21 @@ func (c *ConnTracker) CheckDeviceLimit(user string, limit int) bool
 func (c *ConnTracker) GetUniqueDeviceCount(user string) int
 ```
 
+#### 设备限制说明
+
+**设备识别方式：**
+- 以 Source IP 作为设备标识
+- 同一 IP 的多个连接视为同一设备
+
+**超限处理：**
+- 新连接请求时检查当前设备数
+- 超限时拒绝新连接（不踢掉已有连接）
+- 返回连接错误，客户端需断开其他设备后重试
+
+**NAT 环境说明：**
+- 同一 NAT 后的多设备共享同一出口 IP，会被视为单设备
+- 这是已知限制，如需精确控制建议使用其他认证机制
+
 ### 6.2 时长追踪器
 
 新增 `core/tracker_stats.go` 中的时长追踪:
@@ -789,6 +821,13 @@ func (t *UserTimeTracker) UpdateOnlineTime(onlineUsers []string)
 // 获取并重置时长 (用于上报)
 func (t *UserTimeTracker) GetAndResetTime() map[string]int64
 ```
+
+#### 时长追踪精度
+
+- 采集间隔：每 10 秒统计一次在线用户
+- 精度限制：最小计量单位为 10 秒
+- 短暂连接：在线时间少于 10 秒的连接可能不被记录
+- 累计方式：每次采集时，为所有在线用户累加 10 秒
 
 ### 6.3 CronJob 扩展
 
@@ -1341,6 +1380,33 @@ const menu = computed(() => {
 - Worker 模式 API 层拦截所有写操作
 - WebUI 检测模式，禁用编辑按钮
 
+### 10.4 数据存储安全
+
+- **API Key**：使用 bcrypt 哈希存储，原始 Key 仅在创建时返回一次
+- **Node Token**：明文存储（一次性使用，使用后标记为已用）
+- **Webhook Secret**：明文存储，用于生成请求签名
+
+### 10.5 Webhook 签名
+
+Webhook 请求使用 HMAC-SHA256 签名：
+
+```
+X-Signature: sha256=<hmac_hex>
+```
+
+签名计算方式：
+```go
+signature := hmac.New(sha256.New, []byte(secret))
+signature.Write(requestBody)
+hex := hex.EncodeToString(signature.Sum(nil))
+```
+
+### 10.6 通信安全
+
+- 主从通信**建议**使用 HTTPS，但不强制
+- 生产环境强烈建议配置 TLS 证书
+- 内网环境可使用 HTTP，但需确保网络隔离
+
 ---
 
 ## 11. 容错机制
@@ -1365,75 +1431,72 @@ const menu = computed(() => {
 - 从节点只在版本更新时拉取完整配置
 - 配置变更记录在 Changes 表供审计
 
+### 11.4 节点状态管理
+
+#### 状态判定规则
+
+| 状态 | 判定条件 |
+|------|----------|
+| `online` | 最近 60 秒内收到心跳 |
+| `offline` | 超过 60 秒未收到心跳 |
+| `error` | 超过 5 分钟未收到心跳，或连续 3 次心跳失败 |
+
+#### 订阅生成规则
+
+- 只有 `enable=true` 且 `status=online` 的节点才会出现在订阅中
+- `offline` 或 `error` 状态的节点自动从订阅中剔除
+- 节点恢复 `online` 后自动重新加入订阅
+
+#### Token 变更处理
+
+- 主节点不主动推送 Token 变更
+- 从节点使用旧 Token 请求时返回 401 错误
+- 从节点需要使用新 Token 重新启动或重新注册
+
+### 11.5 监控与日志
+
+#### 日志策略
+
+- 各节点日志独立存储于本地
+- 主节点 WebUI 可查看各节点基础状态（CPU/内存/连接数）
+- 详细日志需登录各节点查看
+
+#### 告警机制（可选）
+
+- 节点离线告警：通过 Webhook 通知
+- 可集成外部监控系统（Prometheus + Grafana）
+
+#### 指标暴露（后续扩展）
+
+- 预留 `/metrics` 端点用于 Prometheus 采集
+- 本期不实现，作为后续扩展点
+
+### 11.6 性能与扩展性
+
+#### 设计容量
+
+| 指标 | 建议值 | 说明 |
+|------|--------|------|
+| 最大节点数 | 100 | 受主节点 SQLite 性能限制 |
+| 单节点最大 Client | 10,000 | 受 sing-box 内存限制 |
+| 统计上报批量 | 1000 条/次 | 超过时分批上报 |
+
+#### 性能优化
+
+- 配置同步使用版本号比对，避免无变更时的全量拉取
+- 统计数据批量上报，减少请求次数
+- 在线状态采用增量更新（仅上报变化的连接）
+
+#### 扩展限制
+
+- 主节点使用 SQLite，不支持水平扩展
+- 如需支持更大规模，建议后续迁移到 PostgreSQL/MySQL
+
 ---
 
 ## 12. 实现计划
 
-### Phase 1: 数据库与模型
-
-- [ ] 新增 `database/model/node.go` (Node, NodeToken, NodeStats, ClientOnline)
-- [ ] 修改 `database/model/model.go` (Client 扩展, Stats.NodeId)
-- [ ] 新增 `database/model/webhook.go` (WebhookConfig, ApiKey)
-- [ ] 修改 `database/db.go` (AutoMigrate)
-
-### Phase 1.5: 核心层改造 (UAP-Aware)
-
-- [ ] 修改 `core/tracker_conn.go` (扩展 ConnectionInfo: User, SourceIP, ConnectedAt)
-- [ ] 修改 `core/tracker_stats.go` (新增 UserTimeTracker)
-
-### Phase 2: 配置与启动
-
-- [ ] 修改 `config/config.go` (节点配置)
-- [ ] 修改 `cmd/cmd.go` (命令行参数)
-- [ ] 修改 `app/app.go` (初始化流程)
-
-### Phase 3: 主节点服务
-
-- [ ] 新增 `service/node.go`
-- [ ] 新增 `api/nodeHandler.go`
-- [ ] 修改 `service/stats.go`
-- [ ] 修改 `web/web.go`
-- [ ] 修改 `api/apiHandler.go`
-- [ ] 修改 `api/apiService.go`
-
-### Phase 4: 从节点同步
-
-- [ ] 新增 `service/sync.go`
-- [ ] 修改 `api/apiHandler.go` (只读检查)
-
-### Phase 4.5: CronJob 扩展 (UAP-Aware)
-
-- [ ] 新增 `cronjob/timeTrackJob.go` (时长追踪任务)
-- [ ] 新增 `cronjob/resetJob.go` (重置策略任务)
-- [ ] 新增 `service/webhook.go` (Webhook 回调服务)
-- [ ] 修改 `cronjob/cronjob.go` (注册新任务)
-
-### Phase 5: 前端改造
-
-**多节点管理 UI:**
-- [ ] 新增 `frontend/src/views/Nodes.vue` (节点管理页面)
-- [ ] 新增 `frontend/src/layouts/modals/Node.vue` (节点编辑弹窗)
-- [ ] 新增 `frontend/src/components/NodeSelector.vue` (节点选择器)
-- [ ] 新增 `frontend/src/types/Node.ts` (节点类型定义)
-- [ ] 修改 `frontend/src/store/modules/data.ts` (节点状态)
-- [ ] 修改 `frontend/src/router/index.ts` (节点路由)
-- [ ] 修改 `frontend/src/layouts/default/Drawer.vue` (节点菜单)
-- [ ] 修改 `frontend/src/layouts/default/AppBar.vue` (节点选择器 + 只读标签)
-
-**UAP 扩展 UI:**
-- [ ] 新增 `frontend/src/views/ApiKeys.vue` (API Key 管理页面)
-- [ ] 新增 `frontend/src/layouts/modals/ApiKey.vue` (API Key 编辑弹窗)
-- [ ] 新增 `frontend/src/types/Client.ts` (Client UAP 类型扩展)
-- [ ] 修改 `frontend/src/layouts/modals/Client.vue` (添加 UAP 字段: UUID, 时长限制, 设备限制等)
-- [ ] 修改 `frontend/src/views/Clients.vue` (显示 UAP 扩展字段列)
-- [ ] 修改 `frontend/src/views/Settings.vue` (添加 Webhook 配置区域)
-
-### Phase 6: UAP Backend 对接
-
-- [ ] 修改 `service/client.go` (UUID 同步到 Config)
-- [ ] 修改 `sub/subService.go` (订阅查询改用 UUID)
-- [ ] 新增 `api/externalHandler.go` (外部 API)
-- [ ] 修改 `web/web.go` (注册外部 API 路由)
+> 详细实现计划请参考: [multi-node-architecture-plan.md](./multi-node-architecture-plan.md)
 
 ---
 
@@ -1447,6 +1510,15 @@ const menu = computed(() => {
 | 订阅 URL | `/sub/{uuid}` | 用 UUID 替代 Name 作为订阅标识 |
 | 协议 UUID | 自动同步 | Config.*.uuid 自动使用 Client.UUID |
 | API 认证 | X-API-Key Header | 新增 API Key 认证中间件 |
+
+**UUID 字段说明：**
+
+`Client.UUID` 同时承担两个职责：
+
+1. **业务层唯一标识**：由 UAP Backend 在创建用户时提供，用于跨系统用户识别和订阅 URL 生成
+2. **协议层认证凭证**：自动同步到各协议配置（如 `vless.uuid`、`vmess.uuid`、`uap.uuid`），用于代理协议的用户认证
+
+这种设计避免了维护两套 UUID 的复杂性，保证业务标识与协议认证的一致性。保存 Client 时，系统自动将 `Client.UUID` 同步到 `Config` 中各协议的 `uuid` 字段。
 
 ### 13.2 Client 模型扩展
 
@@ -1490,7 +1562,7 @@ func (s *ClientService) syncUUIDToConfig(client *model.Client) error {
     json.Unmarshal(client.Config, &config)
 
     // 同步 UUID 到支持 UUID 的协议
-    for _, proto := range []string{"vless", "vmess", "tuic"} {
+    for _, proto := range []string{"vless", "vmess", "tuic", "uap"} {
         if cfg, ok := config[proto]; ok {
             cfg["uuid"] = client.UUID
         }
@@ -1788,3 +1860,10 @@ export interface ClientLink {
     uri: string
 }
 ```
+
+---
+
+## 相关文档
+
+- [S-UI UAP 协议支持技术方案](./uap-protocol-support.md) - S-UI 中 UAP 链接生成、前端配置、订阅输出
+- [UAP 协议 sing-box 实现方案](./uap-singbox-implementation.md) - sing-box 中 UAP 协议的底层实现
