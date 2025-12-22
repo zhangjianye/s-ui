@@ -35,6 +35,17 @@ type Client struct {
 	Up       int64           `json:"up" form:"up"`
 	Desc     string          `json:"desc" form:"desc"`
 	Group    string          `json:"group" form:"group"`
+	// UAP 扩展字段
+	UUID                 string `json:"uuid" form:"uuid" gorm:"unique"`
+	IsPremium            bool   `json:"isPremium" form:"isPremium" gorm:"default:false"`
+	TimeLimit            int64  `json:"timeLimit" form:"timeLimit" gorm:"default:0"`
+	TimeUsed             int64  `json:"timeUsed" form:"timeUsed" gorm:"default:0"`
+	TimeResetStrategy    string `json:"timeResetStrategy" form:"timeResetStrategy" gorm:"default:'no_reset'"`
+	TimeResetAt          int64  `json:"timeResetAt" form:"timeResetAt" gorm:"default:0"`
+	TrafficResetStrategy string `json:"trafficResetStrategy" form:"trafficResetStrategy" gorm:"default:'no_reset'"`
+	TrafficResetAt       int64  `json:"trafficResetAt" form:"trafficResetAt" gorm:"default:0"`
+	SpeedLimit           int    `json:"speedLimit" form:"speedLimit" gorm:"default:0"`
+	DeviceLimit          int    `json:"deviceLimit" form:"deviceLimit" gorm:"default:0"`
 }
 
 type Stats struct {
@@ -44,6 +55,7 @@ type Stats struct {
 	Tag       string `json:"tag"`
 	Direction bool   `json:"direction"`
 	Traffic   int64  `json:"traffic"`
+	NodeId    string `json:"nodeId" gorm:"index;default:'local'"`
 }
 
 type Changes struct {

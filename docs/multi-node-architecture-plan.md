@@ -22,10 +22,10 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [3. 数据库设计](./multi-node-architecture.md#3-数据库设计)
 > **依赖**: 无
 
-- [ ] 新增 `database/model/node.go` (Node, NodeToken, NodeStats, ClientOnline)
-- [ ] 修改 `database/model/model.go` (Client 扩展, Stats.NodeId)
-- [ ] 新增 `database/model/webhook.go` (WebhookConfig, ApiKey)
-- [ ] 修改 `database/db.go` (AutoMigrate)
+- [x] 新增 `database/model/node.go` (Node, NodeToken, NodeStats, ClientOnline)
+- [x] 修改 `database/model/model.go` (Client 扩展, Stats.NodeId)
+- [x] 新增 `database/model/webhook.go` (WebhookConfig, ApiKey)
+- [x] 修改 `database/db.go` (AutoMigrate)
 
 ### Phase 1.5: 核心层改造 (UAP-Aware)
 
@@ -117,7 +117,7 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 
 | 阶段 | 任务数 | 完成数 | 进度 |
 |------|--------|--------|------|
-| Phase 1 | 4 | 0 | 0% |
+| Phase 1 | 4 | 4 | 100% |
 | Phase 1.5 | 2 | 0 | 0% |
 | Phase 2 | 3 | 0 | 0% |
 | Phase 3 | 6 | 0 | 0% |
@@ -125,4 +125,4 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 | Phase 4.5 | 4 | 0 | 0% |
 | Phase 5 | 16 | 0 | 0% |
 | Phase 6 | 4 | 0 | 0% |
-| **总计** | **41** | **0** | **0%** |
+| **总计** | **41** | **4** | **10%** |
