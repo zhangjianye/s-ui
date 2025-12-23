@@ -98,9 +98,14 @@ func (j *JsonService) GetJson(subId string, format string) (*string, []string, e
 func (j *JsonService) getData(subId string) (*model.Client, []*model.Inbound, error) {
 	db := database.GetDB()
 	client := &model.Client{}
-	err := db.Model(model.Client{}).Where("enable = true and name = ?", subId).First(client).Error
+	// 优先尝试 UUID 查询，如果失败则尝试 Name 查询 (向后兼容)
+	err := db.Model(model.Client{}).Where("enable = true and uuid = ?", subId).First(client).Error
 	if err != nil {
-		return nil, nil, err
+		// UUID 查询失败，尝试 Name 查询
+		err = db.Model(model.Client{}).Where("enable = true and name = ?", subId).First(client).Error
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	var clientInbounds []uint
 	err = json.Unmarshal(client.Inbounds, &clientInbounds)

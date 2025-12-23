@@ -75,6 +75,16 @@ func (a *APIHandler) postHandler(c *gin.Context) {
 		a.ApiService.GenerateNodeToken(c)
 	case "deleteNodeToken":
 		a.ApiService.DeleteNodeToken(c)
+	// API Key 管理
+	case "createApiKey":
+		a.ApiService.CreateApiKey(c)
+	case "updateApiKey":
+		a.ApiService.UpdateApiKey(c)
+	case "deleteApiKey":
+		a.ApiService.DeleteApiKey(c)
+	// Webhook 配置
+	case "saveWebhookConfig":
+		a.ApiService.SaveWebhookConfig(c)
 	default:
 		jsonMsg(c, "failed", common.NewError("unknown action: ", action))
 	}
@@ -122,6 +132,12 @@ func (a *APIHandler) getHandler(c *gin.Context) {
 	// 节点模式信息
 	case "nodeMode":
 		a.ApiService.GetNodeMode(c)
+	// API Key 管理
+	case "apiKeys":
+		a.ApiService.GetApiKeys(c)
+	// Webhook 配置
+	case "webhookConfig":
+		a.ApiService.GetWebhookConfig(c)
 	default:
 		jsonMsg(c, "failed", common.NewError("unknown action: ", action))
 	}

@@ -19,6 +19,7 @@ import (
 type APP struct {
 	service.SettingService
 	configService *service.ConfigService
+	syncService   *service.SyncService
 	webServer     *web.Server
 	subServer     *sub.Server
 	cronJob       *cronjob.CronJob
@@ -58,10 +59,10 @@ func (a *APP) Init() error {
 	a.webServer = web.NewServer()
 	a.subServer = sub.NewServer()
 
-	// TODO: Worker 模式下初始化同步服务 (Phase 4)
-	// if config.IsWorker() {
-	//     a.syncService = service.NewSyncService(...)
-	// }
+	// Worker 模式下初始化同步服务
+	if config.IsWorker() {
+		a.syncService = service.NewSyncService(a.configService)
+	}
 
 	return nil
 }
@@ -94,13 +95,15 @@ func (a *APP) Start() error {
 
 	// Worker 模式下，配置从主节点同步
 	if config.IsWorker() {
-		// TODO: Phase 4 实现同步服务
-		// err = a.syncService.Start()
-		// if err != nil {
-		//     return err
-		// }
-		// 暂时不启动 Core，等待同步配置
-		logger.Info("Worker mode: waiting for config sync from master")
+		err = a.syncService.Start()
+		if err != nil {
+			logger.Error("Failed to start sync service: ", err)
+			// 尝试使用本地缓存配置启动
+			err = a.configService.StartCore("")
+			if err != nil {
+				logger.Error("Failed to start core with local config: ", err)
+			}
+		}
 	} else {
 		// Standalone/Master 模式下正常启动 Core
 		err = a.configService.StartCore("")
@@ -127,6 +130,11 @@ func (a *APP) logStartupInfo() {
 }
 
 func (a *APP) Stop() {
+	// 停止同步服务 (Worker 模式)
+	if a.syncService != nil {
+		a.syncService.Stop()
+	}
+
 	a.cronJob.Stop()
 	err := a.subServer.Stop()
 	if err != nil {

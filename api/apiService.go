@@ -7,6 +7,7 @@ import (
 
 	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database"
+	"github.com/alireza0/s-ui/database/model"
 	"github.com/alireza0/s-ui/logger"
 	"github.com/alireza0/s-ui/service"
 	"github.com/alireza0/s-ui/util"
@@ -456,4 +457,135 @@ func (a *ApiService) GetNodeMode(c *gin.Context) {
 		"isWorker":   config.IsWorker(),
 	}
 	jsonObj(c, data, nil)
+}
+
+// ========== API Key 管理 ==========
+
+// GetApiKeys 获取 API Key 列表
+func (a *ApiService) GetApiKeys(c *gin.Context) {
+	db := database.GetDB()
+	var keys []model.ApiKey
+	err := db.Find(&keys).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+	jsonObj(c, keys, nil)
+}
+
+// CreateApiKey 创建 API Key
+func (a *ApiService) CreateApiKey(c *gin.Context) {
+	name := c.Request.FormValue("name")
+	if name == "" {
+		jsonMsg(c, "", common.NewError("name is required"))
+		return
+	}
+
+	// 生成随机 key
+	key := util.Random(32)
+
+	db := database.GetDB()
+	apiKey := model.ApiKey{
+		Key:    key,
+		Name:   name,
+		Enable: true,
+	}
+	err := db.Create(&apiKey).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	jsonObj(c, apiKey, nil)
+}
+
+// UpdateApiKey 更新 API Key
+func (a *ApiService) UpdateApiKey(c *gin.Context) {
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	db := database.GetDB()
+	var apiKey model.ApiKey
+	err = db.First(&apiKey, uint(id)).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	name := c.Request.FormValue("name")
+	enableStr := c.Request.FormValue("enable")
+
+	if name != "" {
+		apiKey.Name = name
+	}
+	if enableStr != "" {
+		apiKey.Enable = enableStr == "true"
+	}
+
+	err = db.Save(&apiKey).Error
+	jsonMsg(c, "", err)
+}
+
+// DeleteApiKey 删除 API Key
+func (a *ApiService) DeleteApiKey(c *gin.Context) {
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	db := database.GetDB()
+	err = db.Delete(&model.ApiKey{}, uint(id)).Error
+	jsonMsg(c, "", err)
+}
+
+// ========== Webhook 配置管理 ==========
+
+// GetWebhookConfig 获取 Webhook 配置
+func (a *ApiService) GetWebhookConfig(c *gin.Context) {
+	db := database.GetDB()
+	var config model.WebhookConfig
+	err := db.First(&config).Error
+	if err != nil {
+		// 如果不存在，返回空配置
+		jsonObj(c, model.WebhookConfig{Enable: false}, nil)
+		return
+	}
+	jsonObj(c, config, nil)
+}
+
+// SaveWebhookConfig 保存 Webhook 配置
+func (a *ApiService) SaveWebhookConfig(c *gin.Context) {
+	callbackURL := c.Request.FormValue("callbackUrl")
+	callbackSecret := c.Request.FormValue("callbackSecret")
+	enableStr := c.Request.FormValue("enable")
+
+	enable := enableStr == "true"
+
+	db := database.GetDB()
+	var config model.WebhookConfig
+	err := db.First(&config).Error
+
+	if err != nil {
+		// 创建新记录
+		config = model.WebhookConfig{
+			CallbackURL:    callbackURL,
+			CallbackSecret: callbackSecret,
+			Enable:         enable,
+		}
+		err = db.Create(&config).Error
+	} else {
+		// 更新现有记录
+		config.CallbackURL = callbackURL
+		config.CallbackSecret = callbackSecret
+		config.Enable = enable
+		err = db.Save(&config).Error
+	}
+
+	jsonMsg(c, "", err)
 }

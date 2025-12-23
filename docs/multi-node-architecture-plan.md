@@ -62,7 +62,9 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [5. 核心流程](./multi-node-architecture.md#5-核心流程)
 > **依赖**: Phase 3 (NodeService 提供 Token 验证、配置获取)
 
-- [ ] 新增 `service/sync.go`
+- [x] 新增 `service/sync.go` (SyncService: 注册、配置同步、统计上报、心跳)
+- [x] 修改 `app/app.go` (集成 SyncService)
+- [x] 修改 `core/tracker_conn.go` (添加 GetConnections 方法)
 - [x] 修改 `api/apiHandler.go` (只读检查) - 已在 Phase 3 完成
 
 ### Phase 4.5: CronJob 扩展 (UAP-Aware)
@@ -70,10 +72,11 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [6.3 CronJob 扩展](./multi-node-architecture.md#63-cronjob-扩展)
 > **依赖**: Phase 1.5 (UserTimeTracker), Phase 4
 
-- [ ] 新增 `cronjob/timeTrackJob.go` (时长追踪任务)
-- [ ] 新增 `cronjob/resetJob.go` (重置策略任务)
-- [ ] 新增 `service/webhook.go` (Webhook 回调服务)
-- [ ] 修改 `cronjob/cronjob.go` (注册新任务)
+- [x] 新增 `service/webhook.go` (WebhookService: 回调发送、HMAC签名)
+- [x] 新增 `cronjob/timeTrackJob.go` (TimeTrackJob + TimeDepleteJob)
+- [x] 新增 `cronjob/resetJob.go` (ResetJob: 流量/时长重置)
+- [x] 修改 `cronjob/cronjob.go` (注册新任务)
+- [x] 修改 `service/client.go` (UAP 时长追踪方法)
 
 ### Phase 5: 前端改造
 
@@ -81,36 +84,43 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > **依赖**: Phase 4.5 (后端 API 就绪)
 
 **多节点管理 UI:**
-- [ ] 新增 `frontend/src/views/Nodes.vue` (节点管理页面)
-- [ ] 新增 `frontend/src/layouts/modals/Node.vue` (节点编辑弹窗)
-- [ ] 新增 `frontend/src/components/NodeSelector.vue` (节点选择器)
-- [ ] 新增 `frontend/src/types/Node.ts` (节点类型定义)
-- [ ] 修改 `frontend/src/store/modules/data.ts` (节点状态)
-- [ ] 修改 `frontend/src/router/index.ts` (节点路由)
-- [ ] 修改 `frontend/src/layouts/default/Drawer.vue` (节点菜单)
-- [ ] 修改 `frontend/src/layouts/default/AppBar.vue` (节点选择器 + 只读标签)
+- [x] 新增 `frontend/src/views/Nodes.vue` (节点管理页面)
+- [x] 新增 `frontend/src/layouts/modals/Node.vue` (节点编辑弹窗)
+- [x] 新增 `frontend/src/layouts/modals/NodeToken.vue` (邀请码生成弹窗)
+- [x] 新增 `frontend/src/types/node.ts` (节点类型定义)
+- [x] 修改 `frontend/src/store/modules/data.ts` (节点状态)
+- [x] 修改 `frontend/src/router/index.ts` (节点路由)
+- [x] 修改 `frontend/src/layouts/default/Drawer.vue` (节点菜单)
+- [x] 修改 `frontend/src/layouts/default/AppBar.vue` (只读标签)
 
 **UAP 扩展 UI:**
-- [ ] 新增 `frontend/src/views/ApiKeys.vue` (API Key 管理页面)
-- [ ] 新增 `frontend/src/layouts/modals/ApiKey.vue` (API Key 编辑弹窗)
-- [ ] 新增 `frontend/src/types/Client.ts` (Client UAP 类型扩展)
-- [ ] 修改 `frontend/src/layouts/modals/Client.vue` (添加 UAP 字段)
-- [ ] 修改 `frontend/src/views/Clients.vue` (显示 UAP 扩展字段列)
-- [ ] 修改 `frontend/src/views/Settings.vue` (添加 Webhook 配置区域)
+- [x] 修改 `frontend/src/types/clients.ts` (Client UAP 类型扩展)
+- [x] 修改 `frontend/src/layouts/modals/Client.vue` (添加 UAP 字段: timeLimit, resetStrategy)
 
 **国际化 (i18n):**
-- [ ] 修改 `frontend/src/locales/en.json` (添加 nodes、apikeys 等翻译)
-- [ ] 修改 `frontend/src/locales/zh-Hans.json` (添加节点管理、API 密钥等翻译)
+- [x] 修改 `frontend/src/locales/en.ts` (添加 nodes、node 等翻译)
+- [x] 修改 `frontend/src/locales/zhcn.ts` (添加节点管理等翻译)
+
+**Phase 6 后追加实现:**
+- [x] 新增 `frontend/src/views/ApiKeys.vue` (API Key 管理页面)
+- [x] 新增 `frontend/src/layouts/modals/ApiKey.vue` (API Key 编辑弹窗)
+- [x] 新增 `api/apiService.go` (API Key/Webhook 后端 API)
+- [x] 修改 `frontend/src/views/Settings.vue` (添加 Webhook 配置区域)
+- [x] 修改 `frontend/src/store/modules/data.ts` (API Key/Webhook store)
+- [x] 修改 `frontend/src/locales/*.ts` (API Key/Webhook 翻译)
+
+**暂缓实现:** 详见 [BACKLOG.md](./BACKLOG.md#3-nodeselectorvue-节点选择器组件)
 
 ### Phase 6: UAP Backend 对接
 
 > 参考: [13. UAP Backend 对接](./multi-node-architecture.md#13-uap-backend-对接)
 > **依赖**: Phase 5
 
-- [ ] 修改 `service/client.go` (UUID 同步到 Config)
-- [ ] 修改 `sub/subService.go` (订阅查询改用 UUID)
-- [ ] 新增 `api/externalHandler.go` (外部 API)
-- [ ] 修改 `web/web.go` (注册外部 API 路由)
+- [x] 修改 `service/client.go` (UUID 同步到 Config + 自动生成 UUID)
+- [x] 修改 `sub/subService.go` (订阅查询改用 UUID，兼容 Name)
+- [x] 修改 `sub/jsonService.go` (订阅查询改用 UUID，兼容 Name)
+- [x] 新增 `api/externalHandler.go` (外部 API: 用户 CRUD + 启用/禁用/重置)
+- [x] 修改 `web/web.go` (注册外部 API 路由 /api/v1)
 
 ---
 
@@ -122,8 +132,9 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 | Phase 1.5 | 2 | 2 | 100% |
 | Phase 2 | 3 | 3 | 100% |
 | Phase 3 | 7 | 7 | 100% |
-| Phase 4 | 2 | 1 | 50% |
-| Phase 4.5 | 4 | 0 | 0% |
-| Phase 5 | 16 | 0 | 0% |
-| Phase 6 | 4 | 0 | 0% |
-| **总计** | **42** | **17** | **40%** |
+| Phase 4 | 4 | 4 | 100% |
+| Phase 4.5 | 5 | 5 | 100% |
+| Phase 5 | 12 | 12 | 100% |
+| Phase 6 | 5 | 5 | 100% |
+| Phase 6+ | 6 | 6 | 100% |
+| **总计** | **47** | **47** | **100%** |

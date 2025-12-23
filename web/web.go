@@ -116,6 +116,13 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 		api.NewNodeHandler(group_node)
 	}
 
+	// 外部 API (供 UAP Backend 调用)
+	// 只有 Master 或 Standalone 模式才启用外部 API
+	if config.IsMaster() || !config.IsWorker() {
+		group_external := engine.Group(base_url + "api/v1")
+		api.NewExternalHandler(group_external)
+	}
+
 	// Serve index.html as the entry point
 	// Handle all other routes by serving index.html
 	engine.NoRoute(func(c *gin.Context) {

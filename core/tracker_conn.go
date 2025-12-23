@@ -215,3 +215,15 @@ func (c *ConnTracker) GetOnlineUsers() []string {
 	}
 	return result
 }
+
+// GetConnections 获取所有连接信息 (用于从节点上报在线状态)
+func (c *ConnTracker) GetConnections() []*ConnectionInfo {
+	c.access.Lock()
+	defer c.access.Unlock()
+
+	result := make([]*ConnectionInfo, 0, len(c.connections))
+	for _, connInfo := range c.connections {
+		result = append(result, connInfo)
+	}
+	return result
+}
