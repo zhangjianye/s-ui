@@ -21,6 +21,15 @@ var onlineResources = &onlines{}
 type StatsService struct {
 }
 
+// NodeOnlines 节点在线信息 (用于前端按节点显示在线状态)
+type NodeOnlines struct {
+	NodeId   string   `json:"nodeId"`
+	NodeName string   `json:"nodeName"`
+	Inbound  []string `json:"inbound,omitempty"`
+	User     []string `json:"user,omitempty"`
+	Outbound []string `json:"outbound,omitempty"`
+}
+
 func (s *StatsService) SaveStats(enableTraffic bool) error {
 	if !corePtr.IsRunning() {
 		return nil
@@ -117,39 +126,66 @@ func (s *StatsService) GetOnlines() (onlines, error) {
 }
 
 // GetAllOnlines 获取所有节点的在线状态 (主节点模式)
-func (s *StatsService) GetAllOnlines() (map[string]interface{}, error) {
-	result := make(map[string]interface{})
+func (s *StatsService) GetAllOnlines() ([]NodeOnlines, error) {
+	var result []NodeOnlines
 
-	// 本地在线状态
-	result["local"] = onlineResources
+	// 本地在线状态 (Standalone 或 Master 本地)
+	localNode := NodeOnlines{
+		NodeId:   "local",
+		NodeName: "Local",
+		Inbound:  onlineResources.Inbound,
+		User:     onlineResources.User,
+		Outbound: onlineResources.Outbound,
+	}
+	result = append(result, localNode)
 
 	// 如果是主节点，还需要获取从节点的在线状态
 	if config.IsMaster() {
 		db := database.GetDB()
-		var clientOnlines []model.ClientOnline
+
+		// 获取所有节点信息 (用于获取节点名称)
+		var nodes []model.Node
+		err := db.Select("node_id, name").Find(&nodes).Error
+		if err != nil {
+			return nil, err
+		}
+		nodeNameMap := make(map[string]string)
+		for _, n := range nodes {
+			nodeNameMap[n.NodeId] = n.Name
+		}
+
 		// 获取最近 60 秒内的在线记录
+		var clientOnlines []model.ClientOnline
 		threshold := time.Now().Unix() - 60
-		err := db.Where("last_seen > ?", threshold).Find(&clientOnlines).Error
+		err = db.Where("last_seen > ?", threshold).Find(&clientOnlines).Error
 		if err != nil {
 			return nil, err
 		}
 
 		// 按节点分组
-		nodeOnlines := make(map[string]*onlines)
+		nodeOnlinesMap := make(map[string]*NodeOnlines)
 		for _, co := range clientOnlines {
-			if _, ok := nodeOnlines[co.NodeId]; !ok {
-				nodeOnlines[co.NodeId] = &onlines{}
+			if _, ok := nodeOnlinesMap[co.NodeId]; !ok {
+				nodeName := nodeNameMap[co.NodeId]
+				if nodeName == "" {
+					nodeName = co.NodeId // fallback to nodeId if name not found
+				}
+				nodeOnlinesMap[co.NodeId] = &NodeOnlines{
+					NodeId:   co.NodeId,
+					NodeName: nodeName,
+				}
 			}
 			// 用户在线
-			nodeOnlines[co.NodeId].User = appendUnique(nodeOnlines[co.NodeId].User, co.ClientName)
+			nodeOnlinesMap[co.NodeId].User = appendUnique(nodeOnlinesMap[co.NodeId].User, co.ClientName)
 			// 入站在线
 			if co.InboundTag != "" {
-				nodeOnlines[co.NodeId].Inbound = appendUnique(nodeOnlines[co.NodeId].Inbound, co.InboundTag)
+				nodeOnlinesMap[co.NodeId].Inbound = appendUnique(nodeOnlinesMap[co.NodeId].Inbound, co.InboundTag)
 			}
 		}
 
-		for nodeId, online := range nodeOnlines {
-			result[nodeId] = online
+		// 转换为切片
+		for _, online := range nodeOnlinesMap {
+			result = append(result, *online)
 		}
 	}
 
