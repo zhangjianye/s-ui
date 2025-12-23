@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database"
 	"github.com/alireza0/s-ui/database/model"
 	"github.com/alireza0/s-ui/logger"
@@ -384,20 +383,21 @@ func (s *NodeService) SaveNodeStats(nodeId string, stats []model.Stats) error {
 		}
 	}()
 
-	for _, stat := range stats {
-		stat.NodeId = nodeId
+	// 使用索引访问以修改原始切片
+	for i := range stats {
+		stats[i].NodeId = nodeId
 		// 更新 Client 流量
-		if stat.Resource == "user" {
-			if stat.Direction {
-				err := tx.Model(&model.Client{}).Where("name = ?", stat.Tag).
-					UpdateColumn("up", gorm.Expr("up + ?", stat.Traffic)).Error
+		if stats[i].Resource == "user" {
+			if stats[i].Direction {
+				err := tx.Model(&model.Client{}).Where("name = ?", stats[i].Tag).
+					UpdateColumn("up", gorm.Expr("up + ?", stats[i].Traffic)).Error
 				if err != nil {
 					tx.Rollback()
 					return err
 				}
 			} else {
-				err := tx.Model(&model.Client{}).Where("name = ?", stat.Tag).
-					UpdateColumn("down", gorm.Expr("down + ?", stat.Traffic)).Error
+				err := tx.Model(&model.Client{}).Where("name = ?", stats[i].Tag).
+					UpdateColumn("down", gorm.Expr("down + ?", stats[i].Traffic)).Error
 				if err != nil {
 					tx.Rollback()
 					return err
@@ -456,16 +456,11 @@ func (s *NodeService) SaveOnlineStatus(nodeId string, onlines []model.ClientOnli
 // generateSecureToken 生成安全随机 Token
 func generateSecureToken(length int) string {
 	bytes := make([]byte, length)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		// 如果加密随机数生成失败，使用时间戳作为后备方案
+		// 这种情况极少发生，通常表示系统熵池耗尽
+		logger.Warning("crypto/rand failed, using fallback: ", err)
+		return hex.EncodeToString([]byte(time.Now().String()))[:length*2]
+	}
 	return hex.EncodeToString(bytes)
-}
-
-// IsMasterMode 检查是否为主节点模式
-func IsMasterMode() bool {
-	return config.IsMaster()
-}
-
-// IsWorkerMode 检查是否为从节点模式
-func IsWorkerMode() bool {
-	return config.IsWorker()
 }

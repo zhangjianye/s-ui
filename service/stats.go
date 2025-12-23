@@ -21,15 +21,6 @@ var onlineResources = &onlines{}
 type StatsService struct {
 }
 
-// NodeOnlines 节点在线信息
-type NodeOnlines struct {
-	NodeId   string   `json:"nodeId"`
-	NodeName string   `json:"nodeName"`
-	Inbound  []string `json:"inbound,omitempty"`
-	User     []string `json:"user,omitempty"`
-	Outbound []string `json:"outbound,omitempty"`
-}
-
 func (s *StatsService) SaveStats(enableTraffic bool) error {
 	if !corePtr.IsRunning() {
 		return nil
