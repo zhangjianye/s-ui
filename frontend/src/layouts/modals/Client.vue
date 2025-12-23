@@ -147,7 +147,7 @@
                     hide-details>
                   </v-text-field>
                   <v-text-field
-                    v-if="key == 'vless'"
+                    v-if="key == 'vless' || key == 'uap'"
                     label="Flow"
                     v-model="clientConfig[key].flow"
                     hide-details>

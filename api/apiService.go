@@ -482,7 +482,7 @@ func (a *ApiService) CreateApiKey(c *gin.Context) {
 	}
 
 	// 生成随机 key
-	key := util.Random(32)
+	key := common.Random(32)
 
 	db := database.GetDB()
 	apiKey := model.ApiKey{

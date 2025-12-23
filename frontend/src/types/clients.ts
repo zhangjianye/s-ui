@@ -101,6 +101,7 @@ export function shuffleConfigs(configs: Config, key?: string) {
         break
       case "vmess":
       case "vless":
+      case "uap":
         configs[k].uuid = RandomUtil.randomUUID()
         break
     }
@@ -143,6 +144,11 @@ export function randomConfigs(user: string): Config {
       alterId: 0,
     },
     vless: {
+      name: user,
+      uuid: uuid,
+      flow: "xtls-rprx-vision",
+    },
+    uap: {
       name: user,
       uuid: uuid,
       flow: "xtls-rprx-vision",

@@ -17,6 +17,7 @@ export const InTypes = {
   TUIC: 'tuic',
   Hysteria2: 'hysteria2',
   VLESS: 'vless',
+  UAP: 'uap',
   AnyTls: 'anytls',
   Tun: 'tun',
   Redirect: 'redirect',
@@ -115,6 +116,12 @@ export interface VLESS extends InboundBasics {
   tls: iTls
 }
 
+export interface UAP extends InboundBasics {
+  multiplex?: iMultiplex
+  transport?: Transport
+  tls: iTls
+}
+
 export interface AnyTls extends InboundBasics {
   padding_scheme: string[]
   tls: iTls
@@ -190,6 +197,7 @@ type InterfaceMap = {
   tuic: TUIC
   hysteria2: Hysteria2
   vless: VLESS
+  uap: UAP
   anytls: AnyTls
   tun: Tun
   redirect: Redirect
@@ -214,6 +222,7 @@ const defaultValues: Record<InType, Inbound> = {
   tuic: <TUIC>{ type: InTypes.TUIC, congestion_control: "cubic", tls_id: 0 },
   hysteria2: <Hysteria2>{ type: InTypes.Hysteria2, tls_id: 0 },
   vless: <VLESS>{ type: InTypes.VLESS, tls_id: 0, multiplex: {}, transport: {} },
+  uap: <UAP>{ type: InTypes.UAP, tls_id: 0, multiplex: {}, transport: {} },
   anytls: <AnyTls>{ type: InTypes.AnyTls, tls_id: 0, padding_scheme: [
     "stop=8",
     "0=30-30",

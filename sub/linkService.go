@@ -70,6 +70,9 @@ func (s *LinkService) addClientInfo(uri string, clientInfo string) string {
 			return uri
 		}
 		return "vmess://" + util.ByteToB64Str(result)
+	case "vless", "uap":
+		// URL 格式，直接在 fragment 中追加信息
+		return uri + clientInfo
 	default:
 		return uri + clientInfo
 	}
