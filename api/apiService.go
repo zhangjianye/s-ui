@@ -5,10 +5,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database"
+	"github.com/alireza0/s-ui/database/model"
 	"github.com/alireza0/s-ui/logger"
 	"github.com/alireza0/s-ui/service"
 	"github.com/alireza0/s-ui/util"
+	"github.com/alireza0/s-ui/util/common"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +29,7 @@ type ApiService struct {
 	service.PanelService
 	service.StatsService
 	service.ServerService
+	service.NodeService
 }
 
 func (a *ApiService) LoadData(c *gin.Context) {
@@ -376,5 +380,212 @@ func (a *ApiService) AddToken(c *gin.Context) {
 func (a *ApiService) DeleteToken(c *gin.Context) {
 	tokenId := c.Request.FormValue("id")
 	err := a.UserService.DeleteToken(tokenId)
+	jsonMsg(c, "", err)
+}
+
+// ========== 节点管理 API ==========
+
+// GetNodes 获取节点列表
+func (a *ApiService) GetNodes(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can list nodes"))
+		return
+	}
+	nodes, err := a.NodeService.GetNodes()
+	jsonObj(c, nodes, err)
+}
+
+// GetNodeTokens 获取节点邀请码列表
+func (a *ApiService) GetNodeTokens(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can list node tokens"))
+		return
+	}
+	tokens, err := a.NodeService.GetTokens()
+	jsonObj(c, tokens, err)
+}
+
+// GenerateNodeToken 生成节点邀请码
+func (a *ApiService) GenerateNodeToken(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can generate tokens"))
+		return
+	}
+
+	name := c.Request.FormValue("name")
+	expiresAtStr := c.Request.FormValue("expiresAt")
+	var expiresAt int64
+	if expiresAtStr != "" {
+		var err error
+		expiresAt, err = strconv.ParseInt(expiresAtStr, 10, 64)
+		if err != nil {
+			jsonMsg(c, "", err)
+			return
+		}
+	}
+
+	token, err := a.NodeService.GenerateToken(name, expiresAt)
+	jsonObj(c, token, err)
+}
+
+// DeleteNodeToken 删除节点邀请码
+func (a *ApiService) DeleteNodeToken(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can delete tokens"))
+		return
+	}
+
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	err = a.NodeService.DeleteToken(uint(id))
+	jsonMsg(c, "", err)
+}
+
+// GetNodeMode 获取当前节点模式信息
+func (a *ApiService) GetNodeMode(c *gin.Context) {
+	data := map[string]interface{}{
+		"mode":       config.GetNodeMode(),
+		"nodeId":     config.GetNodeId(),
+		"nodeName":   config.GetNodeName(),
+		"isReadOnly": config.IsReadOnly(),
+		"isMaster":   config.IsMaster(),
+		"isWorker":   config.IsWorker(),
+	}
+	jsonObj(c, data, nil)
+}
+
+// ========== API Key 管理 ==========
+
+// GetApiKeys 获取 API Key 列表
+func (a *ApiService) GetApiKeys(c *gin.Context) {
+	db := database.GetDB()
+	var keys []model.ApiKey
+	err := db.Find(&keys).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+	jsonObj(c, keys, nil)
+}
+
+// CreateApiKey 创建 API Key
+func (a *ApiService) CreateApiKey(c *gin.Context) {
+	name := c.Request.FormValue("name")
+	if name == "" {
+		jsonMsg(c, "", common.NewError("name is required"))
+		return
+	}
+
+	// 生成随机 key
+	key := common.Random(32)
+
+	db := database.GetDB()
+	apiKey := model.ApiKey{
+		Key:    key,
+		Name:   name,
+		Enable: true,
+	}
+	err := db.Create(&apiKey).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	jsonObj(c, apiKey, nil)
+}
+
+// UpdateApiKey 更新 API Key
+func (a *ApiService) UpdateApiKey(c *gin.Context) {
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	db := database.GetDB()
+	var apiKey model.ApiKey
+	err = db.First(&apiKey, uint(id)).Error
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	name := c.Request.FormValue("name")
+	enableStr := c.Request.FormValue("enable")
+
+	if name != "" {
+		apiKey.Name = name
+	}
+	if enableStr != "" {
+		apiKey.Enable = enableStr == "true"
+	}
+
+	err = db.Save(&apiKey).Error
+	jsonMsg(c, "", err)
+}
+
+// DeleteApiKey 删除 API Key
+func (a *ApiService) DeleteApiKey(c *gin.Context) {
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	db := database.GetDB()
+	err = db.Delete(&model.ApiKey{}, uint(id)).Error
+	jsonMsg(c, "", err)
+}
+
+// ========== Webhook 配置管理 ==========
+
+// GetWebhookConfig 获取 Webhook 配置
+func (a *ApiService) GetWebhookConfig(c *gin.Context) {
+	db := database.GetDB()
+	var config model.WebhookConfig
+	err := db.First(&config).Error
+	if err != nil {
+		// 如果不存在，返回空配置
+		jsonObj(c, model.WebhookConfig{Enable: false}, nil)
+		return
+	}
+	jsonObj(c, config, nil)
+}
+
+// SaveWebhookConfig 保存 Webhook 配置
+func (a *ApiService) SaveWebhookConfig(c *gin.Context) {
+	callbackURL := c.Request.FormValue("callbackUrl")
+	callbackSecret := c.Request.FormValue("callbackSecret")
+	enableStr := c.Request.FormValue("enable")
+
+	enable := enableStr == "true"
+
+	db := database.GetDB()
+	var config model.WebhookConfig
+	err := db.First(&config).Error
+
+	if err != nil {
+		// 创建新记录
+		config = model.WebhookConfig{
+			CallbackURL:    callbackURL,
+			CallbackSecret: callbackSecret,
+			Enable:         enable,
+		}
+		err = db.Create(&config).Error
+	} else {
+		// 更新现有记录
+		config.CallbackURL = callbackURL
+		config.CallbackSecret = callbackSecret
+		config.Enable = enable
+		err = db.Save(&config).Error
+	}
+
 	jsonMsg(c, "", err)
 }

@@ -25,6 +25,7 @@ var (
 	router           adapter.Router
 	statsTracker     *StatsTracker
 	connTracker      *ConnTracker
+	timeTracker      *UserTimeTracker
 	factory          log.Factory
 )
 

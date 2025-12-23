@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/alireza0/s-ui/config"
@@ -18,6 +19,7 @@ import (
 type APP struct {
 	service.SettingService
 	configService *service.ConfigService
+	syncService   *service.SyncService
 	webServer     *web.Server
 	subServer     *sub.Server
 	cronJob       *cronjob.CronJob
@@ -31,6 +33,12 @@ func NewApp() *APP {
 
 func (a *APP) Init() error {
 	log.Printf("%v %v", config.GetName(), config.GetVersion())
+	log.Printf("Node Mode: %v", config.GetNodeMode())
+
+	if config.IsWorker() {
+		log.Printf("Node ID: %v", config.GetNodeId())
+		log.Printf("Master: %v", config.GetMasterAddr())
+	}
 
 	a.initLog()
 
@@ -43,12 +51,18 @@ func (a *APP) Init() error {
 	a.SettingService.GetAllSetting()
 
 	a.core = core.NewCore()
-
 	a.cronJob = cronjob.NewCronJob()
+	a.configService = service.NewConfigService(a.core)
+
+	// Web 和 Sub 服务在所有模式下都启动
+	// Worker 模式下 Web 为只读模式（通过 config.IsReadOnly() 判断）
 	a.webServer = web.NewServer()
 	a.subServer = sub.NewServer()
 
-	a.configService = service.NewConfigService(a.core)
+	// Worker 模式下初始化同步服务
+	if config.IsWorker() {
+		a.syncService = service.NewSyncService(a.configService)
+	}
 
 	return nil
 }
@@ -79,15 +93,48 @@ func (a *APP) Start() error {
 		return err
 	}
 
-	err = a.configService.StartCore("")
-	if err != nil {
-		logger.Error(err)
+	// Worker 模式下，配置从主节点同步
+	if config.IsWorker() {
+		err = a.syncService.Start()
+		if err != nil {
+			logger.Error("Failed to start sync service: ", err)
+			// 尝试使用本地缓存配置启动
+			err = a.configService.StartCore("")
+			if err != nil {
+				logger.Error("Failed to start core with local config: ", err)
+			}
+		}
+	} else {
+		// Standalone/Master 模式下正常启动 Core
+		err = a.configService.StartCore("")
+		if err != nil {
+			logger.Error(err)
+		}
 	}
+
+	a.logStartupInfo()
 
 	return nil
 }
 
+func (a *APP) logStartupInfo() {
+	mode := config.GetNodeMode()
+	switch mode {
+	case config.ModeMaster:
+		logger.Info("Running as MASTER node")
+	case config.ModeWorker:
+		logger.Info(fmt.Sprintf("Running as WORKER node [%s]", config.GetNodeId()))
+	default:
+		logger.Info("Running in STANDALONE mode")
+	}
+}
+
 func (a *APP) Stop() {
+	// 停止同步服务 (Worker 模式)
+	if a.syncService != nil {
+		a.syncService.Stop()
+	}
+
 	a.cronJob.Stop()
 	err := a.subServer.Stop()
 	if err != nil {

@@ -25,6 +25,7 @@ type ConfigService struct {
 	OutboundService
 	ServicesService
 	EndpointService
+	NodeService
 }
 
 type SingBoxConfig struct {
@@ -172,6 +173,8 @@ func (s *ConfigService) Save(obj string, act string, data json.RawMessage, initU
 		err = s.restartCoreWithConfig(data)
 	case "settings":
 		err = s.SettingService.Save(tx, data)
+	case "nodes":
+		err = s.NodeService.Save(tx, act, data)
 	default:
 		return nil, common.NewError("unknown object: ", obj)
 	}

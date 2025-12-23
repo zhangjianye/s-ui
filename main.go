@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -11,14 +12,14 @@ import (
 )
 
 func runApp() {
-	app := app.NewApp()
+	a := app.NewApp()
 
-	err := app.Init()
+	err := a.Init()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = app.Start()
+	err = a.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,19 +32,28 @@ func runApp() {
 
 		switch sig {
 		case syscall.SIGHUP:
-			app.RestartApp()
+			a.RestartApp()
 		default:
-			app.Stop()
+			a.Stop()
 			return
 		}
 	}
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		runApp()
+	// 解析命令行参数
+	if !cmd.ParseFlags() {
 		return
-	} else {
-		cmd.ParseCmd()
 	}
+
+	// 检查是否有子命令
+	args := flag.Args()
+	if len(args) > 0 {
+		// 有子命令，交给 ParseCmd 处理
+		cmd.ParseCmd()
+		return
+	}
+
+	// 没有子命令，启动应用
+	runApp()
 }

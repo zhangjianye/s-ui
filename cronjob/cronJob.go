@@ -21,7 +21,7 @@ func (c *CronJob) Start(loc *time.Location, trafficAge int) error {
 	go func() {
 		// Start stats job
 		c.cron.AddJob("@every 10s", NewStatsJob(trafficAge > 0))
-		// Start expiry job
+		// Start expiry job (流量/过期时间检查)
 		c.cron.AddJob("@every 1m", NewDepleteJob())
 		// Start deleting old stats
 		if trafficAge > 0 {
@@ -29,6 +29,14 @@ func (c *CronJob) Start(loc *time.Location, trafficAge int) error {
 		}
 		// Start core if it is not running
 		c.cron.AddJob("@every 5s", NewCheckCoreJob())
+
+		// UAP 新增任务
+		// 时长累计 (每 10 秒)
+		c.cron.AddJob("@every 10s", NewTimeTrackJob())
+		// 时长超限检查 (每 1 分钟)
+		c.cron.AddJob("@every 1m", NewTimeDepleteJob())
+		// 流量/时长重置 (每天)
+		c.cron.AddJob("@daily", NewResetJob())
 	}()
 
 	return nil

@@ -11,7 +11,7 @@ import (
 	"github.com/alireza0/s-ui/util/common"
 )
 
-var InboundTypeWithLink = []string{"socks", "http", "mixed", "shadowsocks", "naive", "hysteria", "hysteria2", "anytls", "tuic", "vless", "trojan", "vmess"}
+var InboundTypeWithLink = []string{"socks", "http", "mixed", "shadowsocks", "naive", "hysteria", "hysteria2", "anytls", "tuic", "vless", "trojan", "vmess", "uap"}
 
 func LinkGenerator(clientConfig json.RawMessage, i *model.Inbound, hostname string) []string {
 	inbound, err := i.MarshalFull()
@@ -89,6 +89,8 @@ func LinkGenerator(clientConfig json.RawMessage, i *model.Inbound, hostname stri
 		return trojanLink(userConfig["trojan"], *inbound, Addrs)
 	case "vmess":
 		return vmessLink(userConfig["vmess"], *inbound, Addrs)
+	case "uap":
+		return uapLink(userConfig["uap"], *inbound, Addrs)
 	}
 
 	return []string{}
@@ -374,6 +376,32 @@ func vlessLink(
 		}
 		port, _ := addr["server_port"].(float64)
 		uri := fmt.Sprintf("vless://%s@%s:%.0f", uuid, addr["server"].(string), port)
+		uri = addParams(uri, params, addr["remark"].(string))
+		links = append(links, uri)
+	}
+
+	return links
+}
+
+func uapLink(
+	userConfig map[string]interface{},
+	inbound map[string]interface{},
+	addrs []map[string]interface{}) []string {
+
+	uuid, _ := userConfig["uuid"].(string)
+	baseParams := getTransportParams(inbound["transport"])
+	var links []string
+
+	for _, addr := range addrs {
+		params := baseParams
+		if tls, ok := addr["tls"].(map[string]interface{}); ok && tls["enabled"].(bool) {
+			getTlsParams(&params, tls, "allowInsecure")
+			if flow, ok := userConfig["flow"].(string); ok {
+				params["flow"] = flow
+			}
+		}
+		port, _ := addr["server_port"].(float64)
+		uri := fmt.Sprintf("uap://%s@%s:%.0f", uuid, addr["server"].(string), port)
 		uri = addParams(uri, params, addr["remark"].(string))
 		links = append(links, uri)
 	}

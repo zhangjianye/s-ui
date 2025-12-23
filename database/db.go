@@ -84,6 +84,14 @@ func InitDB(dbPath string) error {
 		&model.Stats{},
 		&model.Client{},
 		&model.Changes{},
+		// 多节点管理
+		&model.NodeToken{},
+		&model.Node{},
+		&model.NodeStats{},
+		&model.ClientOnline{},
+		// UAP 扩展
+		&model.WebhookConfig{},
+		&model.ApiKey{},
 	)
 	if err != nil {
 		return err
