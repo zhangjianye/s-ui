@@ -265,7 +265,8 @@ sudo chmod +x /usr/local/s-ui/s-ui
 ```bash
 /usr/local/s-ui/s-ui --mode worker \
   --master "https://master.example.com:2095" \
-  --token "YOUR_INVITE_TOKEN"
+  --token "YOUR_INVITE_TOKEN" \
+  --node-id "worker-hk-01"
 ```
 
 **步骤 3**: 创建从节点 systemd 服务
@@ -390,6 +391,7 @@ services:
       ./s-ui --mode worker
       --master https://master.example.com:2095
       --token YOUR_INVITE_TOKEN
+      --node-id worker-01
     ports:
       - "2095:2095"
       - "443:443"
