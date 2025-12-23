@@ -264,7 +264,7 @@ sudo chmod +x /usr/local/s-ui/s-ui
 
 ```bash
 /usr/local/s-ui/s-ui --mode worker \
-  --master-url "https://master.example.com:2095" \
+  --master "https://master.example.com:2095" \
   --token "YOUR_INVITE_TOKEN"
 ```
 
@@ -291,10 +291,12 @@ WantedBy=multi-user.target
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--mode` | 运行模式 | `worker` |
-| `--master-url` | 主节点地址 | `https://master.example.com:2095` |
+| `--master` | 主节点地址 | `https://master.example.com:2095` |
 | `--token` | 邀请码 | `abc123...` |
-| `--sync-interval` | 同步间隔 | `60s` (默认) |
-| `--node-name` | 节点名称 | `worker-hk-01` |
+| `--node-id` | 节点唯一标识 | `node-hk-01` |
+| `--node-name` | 节点显示名称 | `香港节点 01` |
+| `--external-host` | 外部连接地址 | `hk.example.com` |
+| `--external-port` | 外部连接端口 | `443` |
 
 ### 5.6 节点信息配置
 
@@ -386,7 +388,7 @@ services:
     restart: unless-stopped
     command: >
       ./s-ui --mode worker
-      --master-url https://master.example.com:2095
+      --master https://master.example.com:2095
       --token YOUR_INVITE_TOKEN
     ports:
       - "2095:2095"
@@ -484,12 +486,14 @@ UAP 版本支持以下用户扩展字段：
 s-ui [flags]
 
 Flags:
-  --mode string         运行模式 (standalone/master/worker)
-  --master-url string   主节点地址 (worker 模式)
-  --token string        邀请码 (worker 模式)
-  --sync-interval       同步间隔 (默认 60s)
-  --node-name string    节点名称
-  --help                显示帮助
+  -v                    显示版本
+  --mode string         运行模式 (standalone/master/worker，默认 standalone)
+  --master string       主节点地址 (worker 模式必填)
+  --token string        认证令牌 (worker 模式必填)
+  --node-id string      节点唯一标识 (worker 模式必填)
+  --node-name string    节点显示名称 (默认使用 node-id)
+  --external-host string  外部连接地址
+  --external-port int   外部连接端口 (0 = 使用入站端口)
 ```
 
 ### 8.3 目录结构
