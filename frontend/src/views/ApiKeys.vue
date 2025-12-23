@@ -119,6 +119,7 @@ import { computed, ref, onMounted } from 'vue'
 import { i18n } from '@/locales'
 import { useDisplay } from 'vuetify'
 import { push } from 'notivue'
+import Clipboard from 'clipboard'
 
 const { smAndDown } = useDisplay()
 
@@ -164,10 +165,30 @@ const deleteKey = async (id: number) => {
 }
 
 const copyKey = (key: string) => {
-  navigator.clipboard.writeText(key)
-  push.success({
-    message: i18n.global.t('copied')
+  const hiddenButton = document.createElement('button')
+  hiddenButton.className = 'clipboard-btn-apikey'
+  document.body.appendChild(hiddenButton)
+
+  const clipboard = new Clipboard('.clipboard-btn-apikey', {
+    text: () => key,
   })
+
+  clipboard.on('success', () => {
+    clipboard.destroy()
+    push.success({
+      message: i18n.global.t('copied'),
+    })
+  })
+
+  clipboard.on('error', () => {
+    clipboard.destroy()
+    push.error({
+      message: i18n.global.t('failed') + ': ' + i18n.global.t('copyToClipboard'),
+    })
+  })
+
+  hiddenButton.click()
+  document.body.removeChild(hiddenButton)
 }
 
 const maskKey = (key: string) => {

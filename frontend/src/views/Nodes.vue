@@ -163,6 +163,7 @@ import Data from '@/store/modules/data'
 import { Node, getStatusColor, getStatusIcon } from '@/types/node'
 import { i18n } from '@/locales'
 import { push } from 'notivue'
+import Clipboard from 'clipboard'
 import NodeModal from '@/layouts/modals/Node.vue'
 import TokenModal from '@/layouts/modals/NodeToken.vue'
 
@@ -301,18 +302,32 @@ const delToken = async (id: number) => {
   loading.value = false
 }
 
-const copyToken = async (token: string) => {
-  try {
-    await navigator.clipboard.writeText(token)
+const copyToken = (token: string) => {
+  const hiddenButton = document.createElement('button')
+  hiddenButton.className = 'clipboard-btn-token'
+  document.body.appendChild(hiddenButton)
+
+  const clipboard = new Clipboard('.clipboard-btn-token', {
+    text: () => token,
+  })
+
+  clipboard.on('success', () => {
+    clipboard.destroy()
     push.success({
       message: i18n.global.t('actions.copied'),
       duration: 2000,
     })
-  } catch (e) {
+  })
+
+  clipboard.on('error', () => {
+    clipboard.destroy()
     push.error({
-      message: 'Failed to copy',
+      message: i18n.global.t('failed') + ': ' + i18n.global.t('copyToClipboard'),
       duration: 2000,
     })
-  }
+  })
+
+  hiddenButton.click()
+  document.body.removeChild(hiddenButton)
 }
 </script>

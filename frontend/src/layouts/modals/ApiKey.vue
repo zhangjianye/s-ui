@@ -52,6 +52,7 @@ import Data from '@/store/modules/data'
 import { ref, watch, computed } from 'vue'
 import { i18n } from '@/locales'
 import { push } from 'notivue'
+import Clipboard from 'clipboard'
 
 const props = defineProps<{
   visible: boolean
@@ -117,9 +118,29 @@ const save = async () => {
 }
 
 const copyKey = () => {
-  navigator.clipboard.writeText(form.value.key)
-  push.success({
-    message: i18n.global.t('copied')
+  const hiddenButton = document.createElement('button')
+  hiddenButton.className = 'clipboard-btn-modal'
+  document.body.appendChild(hiddenButton)
+
+  const clipboard = new Clipboard('.clipboard-btn-modal', {
+    text: () => form.value.key,
   })
+
+  clipboard.on('success', () => {
+    clipboard.destroy()
+    push.success({
+      message: i18n.global.t('copied'),
+    })
+  })
+
+  clipboard.on('error', () => {
+    clipboard.destroy()
+    push.error({
+      message: i18n.global.t('failed') + ': ' + i18n.global.t('copyToClipboard'),
+    })
+  })
+
+  hiddenButton.click()
+  document.body.removeChild(hiddenButton)
 }
 </script>
