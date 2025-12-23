@@ -563,6 +563,7 @@ export default {
     standalone: "单机模式",
     master: "主节点",
     worker: "从节点",
+    status: "状态",
     online: "在线",
     offline: "离线",
     error: "错误",

@@ -563,6 +563,7 @@ export default {
     standalone: "Standalone",
     master: "Master",
     worker: "Worker",
+    status: "Status",
     online: "Online",
     offline: "Offline",
     error: "Error",

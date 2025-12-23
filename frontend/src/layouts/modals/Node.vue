@@ -111,7 +111,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { Node } from '@/types/node'
 
 const props = defineProps<{
@@ -123,13 +123,6 @@ const emit = defineEmits(['close', 'save'])
 
 const loading = ref(false)
 const localNode = ref<Node | null>(null)
-
-const dialogVisible = computed({
-  get: () => props.visible,
-  set: (value) => {
-    if (!value) emit('close')
-  }
-})
 
 watch(() => props.node, (newNode) => {
   if (newNode) {

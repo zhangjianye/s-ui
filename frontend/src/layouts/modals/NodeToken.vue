@@ -56,7 +56,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   visible: boolean
@@ -67,13 +67,6 @@ const emit = defineEmits(['close', 'generate'])
 const loading = ref(false)
 const name = ref('')
 const expiryDays = ref(30)
-
-const dialogVisible = computed({
-  get: () => props.visible,
-  set: (value) => {
-    if (!value) emit('close')
-  }
-})
 
 watch(() => props.visible, (v) => {
   if (v) {
