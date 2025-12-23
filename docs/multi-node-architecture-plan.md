@@ -1,7 +1,7 @@
 # S-UI 多节点管理架构实现计划
 
 > **关联技术方案**: [multi-node-architecture.md](./multi-node-architecture.md)
-> **最后更新**: 2025-12-22
+> **最后更新**: 2025-12-23
 
 ## 依赖关系
 
@@ -49,12 +49,13 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > 参考: [4. 接口设计](./multi-node-architecture.md#4-接口设计)
 > **依赖**: Phase 2, Phase 1 (Node 模型)
 
-- [ ] 新增 `service/node.go`
-- [ ] 新增 `api/nodeHandler.go`
-- [ ] 修改 `service/stats.go`
-- [ ] 修改 `web/web.go`
-- [ ] 修改 `api/apiHandler.go`
-- [ ] 修改 `api/apiService.go`
+- [x] 新增 `service/node.go`
+- [x] 新增 `api/nodeHandler.go`
+- [x] 修改 `service/stats.go`
+- [x] 修改 `web/web.go`
+- [x] 修改 `api/apiHandler.go`
+- [x] 修改 `api/apiService.go`
+- [x] 修改 `service/config.go` (nodes Save 支持)
 
 ### Phase 4: 从节点同步
 
@@ -62,7 +63,7 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 > **依赖**: Phase 3 (NodeService 提供 Token 验证、配置获取)
 
 - [ ] 新增 `service/sync.go`
-- [ ] 修改 `api/apiHandler.go` (只读检查)
+- [x] 修改 `api/apiHandler.go` (只读检查) - 已在 Phase 3 完成
 
 ### Phase 4.5: CronJob 扩展 (UAP-Aware)
 
@@ -120,9 +121,9 @@ Phase 1 ──► Phase 1.5 ──► Phase 2 ──► Phase 3 ──► Phase 
 | Phase 1 | 4 | 4 | 100% |
 | Phase 1.5 | 2 | 2 | 100% |
 | Phase 2 | 3 | 3 | 100% |
-| Phase 3 | 6 | 0 | 0% |
-| Phase 4 | 2 | 0 | 0% |
+| Phase 3 | 7 | 7 | 100% |
+| Phase 4 | 2 | 1 | 50% |
 | Phase 4.5 | 4 | 0 | 0% |
 | Phase 5 | 16 | 0 | 0% |
 | Phase 6 | 4 | 0 | 0% |
-| **总计** | **41** | **9** | **22%** |
+| **总计** | **42** | **17** | **40%** |

@@ -109,6 +109,13 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	group_api := engine.Group(base_url + "api")
 	api.NewAPIHandler(group_api, apiv2)
 
+	// 节点 API (主节点提供，从节点调用)
+	// 只有 Master 模式才启用节点 API
+	if config.IsMaster() {
+		group_node := engine.Group(base_url + "node")
+		api.NewNodeHandler(group_node)
+	}
+
 	// Serve index.html as the entry point
 	// Handle all other routes by serving index.html
 	engine.NoRoute(func(c *gin.Context) {

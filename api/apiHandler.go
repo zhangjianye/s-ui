@@ -3,6 +3,7 @@ package api
 import (
 	"strings"
 
+	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/util/common"
 
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,19 @@ func (a *APIHandler) postHandler(c *gin.Context) {
 	loginUser := GetLoginUser(c)
 	action := c.Param("postAction")
 
+	// Worker 模式下只读操作限制
+	if config.IsReadOnly() {
+		// 允许的只读操作
+		allowedActions := map[string]bool{
+			"login":       true,
+			"linkConvert": true,
+		}
+		if !allowedActions[action] {
+			jsonMsg(c, "failed", common.NewError("readonly mode: write operations are not allowed"))
+			return
+		}
+	}
+
 	switch action {
 	case "login":
 		a.ApiService.Login(c)
@@ -56,6 +70,11 @@ func (a *APIHandler) postHandler(c *gin.Context) {
 	case "deleteToken":
 		a.ApiService.DeleteToken(c)
 		a.apiv2.ReloadTokens()
+	// 节点管理 (仅 Master 模式)
+	case "generateNodeToken":
+		a.ApiService.GenerateNodeToken(c)
+	case "deleteNodeToken":
+		a.ApiService.DeleteNodeToken(c)
 	default:
 		jsonMsg(c, "failed", common.NewError("unknown action: ", action))
 	}
@@ -95,6 +114,14 @@ func (a *APIHandler) getHandler(c *gin.Context) {
 		a.ApiService.GetDb(c)
 	case "tokens":
 		a.ApiService.GetTokens(c)
+	// 节点管理 (仅 Master 模式)
+	case "nodes":
+		a.ApiService.GetNodes(c)
+	case "nodeTokens":
+		a.ApiService.GetNodeTokens(c)
+	// 节点模式信息
+	case "nodeMode":
+		a.ApiService.GetNodeMode(c)
 	default:
 		jsonMsg(c, "failed", common.NewError("unknown action: ", action))
 	}

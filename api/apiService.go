@@ -5,10 +5,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database"
 	"github.com/alireza0/s-ui/logger"
 	"github.com/alireza0/s-ui/service"
 	"github.com/alireza0/s-ui/util"
+	"github.com/alireza0/s-ui/util/common"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +28,7 @@ type ApiService struct {
 	service.PanelService
 	service.StatsService
 	service.ServerService
+	service.NodeService
 }
 
 func (a *ApiService) LoadData(c *gin.Context) {
@@ -377,4 +380,80 @@ func (a *ApiService) DeleteToken(c *gin.Context) {
 	tokenId := c.Request.FormValue("id")
 	err := a.UserService.DeleteToken(tokenId)
 	jsonMsg(c, "", err)
+}
+
+// ========== 节点管理 API ==========
+
+// GetNodes 获取节点列表
+func (a *ApiService) GetNodes(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can list nodes"))
+		return
+	}
+	nodes, err := a.NodeService.GetNodes()
+	jsonObj(c, nodes, err)
+}
+
+// GetNodeTokens 获取节点邀请码列表
+func (a *ApiService) GetNodeTokens(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can list node tokens"))
+		return
+	}
+	tokens, err := a.NodeService.GetTokens()
+	jsonObj(c, tokens, err)
+}
+
+// GenerateNodeToken 生成节点邀请码
+func (a *ApiService) GenerateNodeToken(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can generate tokens"))
+		return
+	}
+
+	name := c.Request.FormValue("name")
+	expiresAtStr := c.Request.FormValue("expiresAt")
+	var expiresAt int64
+	if expiresAtStr != "" {
+		var err error
+		expiresAt, err = strconv.ParseInt(expiresAtStr, 10, 64)
+		if err != nil {
+			jsonMsg(c, "", err)
+			return
+		}
+	}
+
+	token, err := a.NodeService.GenerateToken(name, expiresAt)
+	jsonObj(c, token, err)
+}
+
+// DeleteNodeToken 删除节点邀请码
+func (a *ApiService) DeleteNodeToken(c *gin.Context) {
+	if !config.IsMaster() {
+		jsonMsg(c, "", common.NewError("only master node can delete tokens"))
+		return
+	}
+
+	idStr := c.Request.FormValue("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		jsonMsg(c, "", err)
+		return
+	}
+
+	err = a.NodeService.DeleteToken(uint(id))
+	jsonMsg(c, "", err)
+}
+
+// GetNodeMode 获取当前节点模式信息
+func (a *ApiService) GetNodeMode(c *gin.Context) {
+	data := map[string]interface{}{
+		"mode":       config.GetNodeMode(),
+		"nodeId":     config.GetNodeId(),
+		"nodeName":   config.GetNodeName(),
+		"isReadOnly": config.IsReadOnly(),
+		"isMaster":   config.IsMaster(),
+		"isWorker":   config.IsWorker(),
+	}
+	jsonObj(c, data, nil)
 }
