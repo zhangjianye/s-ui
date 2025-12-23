@@ -203,6 +203,18 @@ export default {
     links: "Links",
     external: "External Link",
     sub: "External Subscription",
+    // UAP 扩展
+    timeLimit: "Time Limit",
+    timeUsed: "Time Used",
+    trafficResetStrategy: "Traffic Reset",
+    timeResetStrategy: "Time Reset",
+    resetStrategy: {
+      no_reset: "No Reset",
+      daily: "Daily",
+      weekly: "Weekly",
+      monthly: "Monthly",
+      yearly: "Yearly",
+    },
   },
   bulk: {
     order: "Order",

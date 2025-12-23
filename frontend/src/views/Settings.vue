@@ -11,6 +11,7 @@
     <v-tab value="t3">{{ $t('setting.jsonSub') }}</v-tab>
     <v-tab value="t4">{{ $t('setting.clashSub') }}</v-tab>
     <v-tab value="t5">Language</v-tab>
+    <v-tab value="t6">{{ $t('webhook.title') }}</v-tab>
   </v-tabs>
   <v-card-text>
     <v-row align="center" justify="center" style="margin-bottom: 10px;">
@@ -150,6 +151,47 @@
           </v-col>
         </v-row>
       </v-window-item>
+
+      <v-window-item value="t6">
+        <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+          {{ $t('webhook.description') }}
+        </v-alert>
+        <v-row>
+          <v-col cols="12" sm="6" md="4">
+            <v-switch
+              color="primary"
+              v-model="webhookConfig.enable"
+              :label="$t('enable')"
+              hide-details
+            ></v-switch>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model="webhookConfig.callbackUrl"
+              :label="$t('webhook.callbackUrl')"
+              placeholder="https://example.com/webhook"
+              hide-details
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model="webhookConfig.callbackSecret"
+              :label="$t('webhook.callbackSecret')"
+              type="password"
+              hide-details
+            ></v-text-field>
+          </v-col>
+        </v-row>
+        <v-row class="mt-4">
+          <v-col cols="auto">
+            <v-btn color="primary" @click="saveWebhook" :loading="loading" :disabled="!webhookChanged">
+              {{ $t('actions.save') }}
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-window-item>
     </v-window>
   </v-card-text>
 </v-card>
@@ -164,10 +206,25 @@ import { FindDiff } from '@/plugins/utils'
 import SubJsonExtVue from '@/components/SubJsonExt.vue'
 import SubClashExtVue from '@/components/SubClashExt.vue'
 import { push } from 'notivue'
+import Data from '@/store/modules/data'
+import { WebhookConfig } from '@/types/apikey'
+
 const locale = useLocale()
 const tab = ref("t1")
 const loading:Ref = inject('loading')?? ref(false)
 const oldSettings = ref({})
+
+// Webhook 配置
+const webhookConfig = ref<WebhookConfig>({
+  callbackUrl: '',
+  callbackSecret: '',
+  enable: false,
+})
+const oldWebhookConfig = ref<WebhookConfig>({
+  callbackUrl: '',
+  callbackSecret: '',
+  enable: false,
+})
 
 const settings = ref({
 	webListen: "",
@@ -194,7 +251,10 @@ const settings = ref({
   subClashExt: "",
 })
 
-onMounted(async () => {loadData()})
+onMounted(async () => {
+  loadData()
+  loadWebhookData()
+})
 
 const changeLocale = (l: any) => {
   locale.current.value = l ?? 'en'
@@ -298,5 +358,24 @@ const subUpdates = computed({
 
 const stateChange = computed(() => {
   return !FindDiff.deepCompare(settings.value,oldSettings.value)
+})
+
+// Webhook 相关
+const loadWebhookData = async () => {
+  await Data().loadWebhookConfig()
+  const config = Data().webhookConfig
+  webhookConfig.value = { ...config }
+  oldWebhookConfig.value = { ...config }
+}
+
+const saveWebhook = async () => {
+  loading.value = true
+  await Data().saveWebhookConfig(webhookConfig.value)
+  oldWebhookConfig.value = { ...webhookConfig.value }
+  loading.value = false
+}
+
+const webhookChanged = computed(() => {
+  return !FindDiff.deepCompare(webhookConfig.value, oldWebhookConfig.value)
 })
 </script>

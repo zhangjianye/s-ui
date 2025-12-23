@@ -47,6 +47,37 @@
                   <DatePick :expiry="expDate" @submit="setDate" />
                 </v-col>
               </v-row>
+              <!-- UAP 扩展字段 -->
+              <v-row>
+                <v-col cols="12" sm="6" md="4">
+                  <v-text-field v-model.number="TimeLimit" type="number" min="0" :label="$t('client.timeLimit')" :suffix="$t('date.h')" hide-details></v-text-field>
+                </v-col>
+                <v-col cols="12" sm="6" md="4" v-if="id > 0">
+                  <v-text-field :model-value="timeUsedFormatted" :label="$t('client.timeUsed')" readonly hide-details>
+                    <template v-slot:append-inner>
+                      <v-btn density="compact" variant="text" icon="mdi-restore" @click="client.timeUsed=0" v-tooltip:top="$t('reset')"></v-btn>
+                    </template>
+                  </v-text-field>
+                </v-col>
+              </v-row>
+              <v-row>
+                <v-col cols="12" sm="6" md="4">
+                  <v-select
+                    v-model="client.trafficResetStrategy"
+                    :items="resetStrategyOptions"
+                    :label="$t('client.trafficResetStrategy')"
+                    hide-details
+                  ></v-select>
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <v-select
+                    v-model="client.timeResetStrategy"
+                    :items="resetStrategyOptions"
+                    :label="$t('client.timeResetStrategy')"
+                    hide-details
+                  ></v-select>
+                </v-col>
+              </v-row>
               <v-row v-if="id > 0">
                 <v-col cols="12" sm="6" md="4" class="d-flex flex-column">
                   <div class="d-flex justify-space-between align-center">
@@ -277,6 +308,32 @@ export default {
     Volume: {
       get() { return this.client.volume == 0 ? 0 : (this.client.volume / (1024 ** 3)) },
       set(v:number) { this.client.volume = v > 0 ? v*(1024 ** 3) : 0 }
+    },
+    // UAP: 时长限制 (小时 <-> 秒)
+    TimeLimit: {
+      get() { return this.client.timeLimit == 0 ? 0 : Math.floor(this.client.timeLimit / 3600) },
+      set(v:number) { this.client.timeLimit = v > 0 ? v * 3600 : 0 }
+    },
+    // UAP: 已用时长格式化显示
+    timeUsedFormatted() :string {
+      const seconds = this.client.timeUsed || 0
+      if (seconds === 0) return '0'
+      const hours = Math.floor(seconds / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`
+      }
+      return `${minutes}m`
+    },
+    // UAP: 重置策略选项
+    resetStrategyOptions() {
+      return [
+        { title: this.$t('client.resetStrategy.no_reset'), value: 'no_reset' },
+        { title: this.$t('client.resetStrategy.daily'), value: 'daily' },
+        { title: this.$t('client.resetStrategy.weekly'), value: 'weekly' },
+        { title: this.$t('client.resetStrategy.monthly'), value: 'monthly' },
+        { title: this.$t('client.resetStrategy.yearly'), value: 'yearly' },
+      ]
     },
     up() :string { return HumanReadable.sizeFormat(this.client.up) },
     down() :string { return HumanReadable.sizeFormat(this.client.down) },

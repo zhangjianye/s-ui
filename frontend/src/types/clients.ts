@@ -6,6 +6,9 @@ export interface Link {
   uri: string
 }
 
+// 重置策略类型
+export type ResetStrategy = 'no_reset' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+
 export interface Client {
   id?: number
 	enable: boolean
@@ -19,6 +22,11 @@ export interface Client {
   down: number
   desc: string
   group: string
+  // UAP 扩展字段
+  timeLimit: number           // 时长限制（秒），0 表示无限制
+  timeUsed: number            // 已用时长（秒）
+  trafficResetStrategy: ResetStrategy  // 流量重置策略
+  timeResetStrategy: ResetStrategy     // 时长重置策略
 }
 
 const defaultClient: Client = {
@@ -33,6 +41,11 @@ const defaultClient: Client = {
   down: 0,
   desc: "",
   group: "",
+  // UAP 扩展字段默认值
+  timeLimit: 0,
+  timeUsed: 0,
+  trafficResetStrategy: 'no_reset',
+  timeResetStrategy: 'no_reset',
 }
 
 type Config = {

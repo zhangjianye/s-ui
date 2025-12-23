@@ -203,6 +203,18 @@ export default {
     links: "链接",
     external: "外部链接",
     sub: "外部订阅",
+    // UAP 扩展
+    timeLimit: "时长限制",
+    timeUsed: "已用时长",
+    trafficResetStrategy: "流量重置",
+    timeResetStrategy: "时长重置",
+    resetStrategy: {
+      no_reset: "不重置",
+      daily: "每日",
+      weekly: "每周",
+      monthly: "每月",
+      yearly: "每年",
+    },
   },
   bulk: {
     order: "排序",
