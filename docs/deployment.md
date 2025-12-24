@@ -79,6 +79,7 @@ cd ..
 ### 3.3 复制前端文件
 
 ```bash
+mkdir -p web/html
 rm -rf web/html/*
 cp -r frontend/dist/* web/html/
 ```
@@ -115,6 +116,7 @@ npm run build
 cd ..
 
 echo "Copying frontend files..."
+mkdir -p web/html
 rm -rf web/html/*
 cp -r frontend/dist/* web/html/
 
