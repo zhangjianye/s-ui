@@ -361,9 +361,40 @@ journalctl -u s-ui -f
 | `--node-id` | 节点唯一标识 | `node-hk-01` |
 | `--node-name` | 节点显示名称 | `香港节点 01` |
 | `--external-host` | 外部连接地址 | `hk.example.com` |
-| `--external-port` | 外部连接端口 | `443` |
+| `--external-port` | 外部连接端口（0 = 使用入站端口） | `0` |
 
-### 5.6 节点信息配置
+### 5.6 ExternalHost 和 ExternalPort 说明
+
+这两个参数用于生成订阅链接，决定客户端连接的地址和端口。
+
+**ExternalHost**（必填）：
+- 客户端连接时使用的域名或 IP
+- 通常是从节点的公网域名或 IP
+
+**ExternalPort**（端口映射）：
+
+| 场景 | 入站端口 | 外部端口 | ExternalPort 配置 |
+|------|----------|----------|-------------------|
+| 直接部署（无 NAT） | 443 | 443 | `0`（保留原端口） |
+| NAT 端口转发 | 10443 → 443 | 443 | `443` |
+| Docker 映射 | 443:8443 | 8443 | `8443` |
+
+**示例**：
+
+```bash
+# 场景1：直接部署，入站监听 443，客户端连接 443
+--external-host "hk.example.com" --external-port 0
+
+# 场景2：Docker 映射 443:8443，客户端连接 8443
+--external-host "hk.example.com" --external-port 8443
+
+# 场景3：NAT 转发 10443→443，客户端连接 443
+--external-host "hk.example.com" --external-port 443
+```
+
+> **注意**：`ExternalPort = 0` 时，订阅会保留每个入站的原始端口。如果从节点有多个入站监听不同端口，建议设为 0。
+
+### 5.7 节点信息配置
 
 从节点可配置以下元数据（用于在主节点显示）：
 
@@ -561,7 +592,7 @@ UAP 版本支持以下用户扩展字段：
 | `SUI_NODE_ID` | 节点唯一标识 | `worker-hk-01` |
 | `SUI_NODE_NAME` | 节点显示名称 | `香港节点01` |
 | `SUI_EXTERNAL_HOST` | 外部连接地址 | `hk.example.com` |
-| `SUI_EXTERNAL_PORT` | 外部连接端口 | `443` |
+| `SUI_EXTERNAL_PORT` | 外部连接端口（0 = 使用入站端口） | `0` |
 | `SUI_SYNC_CONFIG_INTERVAL` | 配置同步间隔（秒） | `60` (默认) |
 | `SUI_SYNC_STATS_INTERVAL` | 统计上报间隔（秒） | `30` (默认) |
 
