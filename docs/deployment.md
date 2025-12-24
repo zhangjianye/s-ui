@@ -262,9 +262,11 @@ sudo chmod +x /usr/local/s-ui/s-ui
 
 **步骤 2**: 使用邀请码注册
 
+> **注意**: `--master` 地址需要包含面板的 base path（默认为 `/app`）
+
 ```bash
 /usr/local/s-ui/s-ui --mode worker \
-  --master "https://master.example.com:2095" \
+  --master "https://master.example.com:2095/app" \
   --token "YOUR_INVITE_TOKEN" \
   --node-id "worker-hk-01"
 ```
@@ -292,7 +294,7 @@ WantedBy=multi-user.target
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--mode` | 运行模式 | `worker` |
-| `--master` | 主节点地址 | `https://master.example.com:2095` |
+| `--master` | 主节点地址（含 base path） | `https://master.example.com:2095/app` |
 | `--token` | 邀请码 | `abc123...` |
 | `--node-id` | 节点唯一标识 | `node-hk-01` |
 | `--node-name` | 节点显示名称 | `香港节点 01` |
@@ -389,7 +391,7 @@ services:
     restart: unless-stopped
     command: >
       ./s-ui --mode worker
-      --master https://master.example.com:2095
+      --master https://master.example.com:2095/app
       --token YOUR_INVITE_TOKEN
       --node-id worker-01
     ports:
