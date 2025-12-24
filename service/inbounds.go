@@ -244,7 +244,7 @@ func (s *InboundService) GetAllConfig(db *gorm.DB) ([]json.RawMessage, error) {
 
 func (s *InboundService) hasUser(inboundType string) bool {
 	switch inboundType {
-	case "mixed", "socks", "http", "shadowsocks", "vmess", "trojan", "naive", "hysteria", "shadowtls", "tuic", "hysteria2", "vless", "anytls":
+	case "mixed", "socks", "http", "shadowsocks", "vmess", "trojan", "naive", "hysteria", "shadowtls", "tuic", "hysteria2", "vless", "anytls", "uap":
 		return true
 	}
 	return false
@@ -275,7 +275,7 @@ func (s *InboundService) fetchUsers(db *gorm.DB, inboundType string, condition s
 	}
 	var usersJson []json.RawMessage
 	for _, user := range users {
-		if inboundType == "vless" && inbound["tls"] == nil {
+		if (inboundType == "vless" || inboundType == "uap") && inbound["tls"] == nil {
 			user = strings.Replace(user, "xtls-rprx-vision", "", -1)
 		}
 		usersJson = append(usersJson, json.RawMessage(user))

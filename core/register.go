@@ -33,6 +33,7 @@ import (
 	"github.com/sagernet/sing-box/protocol/trojan"
 	"github.com/sagernet/sing-box/protocol/tuic"
 	"github.com/sagernet/sing-box/protocol/tun"
+	"github.com/sagernet/sing-box/protocol/uap"
 	"github.com/sagernet/sing-box/protocol/vless"
 	"github.com/sagernet/sing-box/protocol/vmess"
 	"github.com/sagernet/sing-box/protocol/wireguard"
@@ -61,6 +62,7 @@ func InboundRegistry() *inbound.Registry {
 	naive.RegisterInbound(registry)
 	shadowtls.RegisterInbound(registry)
 	vless.RegisterInbound(registry)
+	uap.RegisterInbound(registry)
 	anytls.RegisterInbound(registry)
 
 	hysteria.RegisterInbound(registry)

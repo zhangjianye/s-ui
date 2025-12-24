@@ -1,8 +1,10 @@
 package sub
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/logger"
 	"github.com/alireza0/s-ui/service"
 	"github.com/alireza0/s-ui/util"
@@ -12,6 +14,7 @@ import (
 
 type ClashService struct {
 	service.SettingService
+	service.NodeService
 	JsonService
 	LinkService
 }
@@ -73,6 +76,14 @@ func (s *ClashService) GetClash(subId string) (*string, []string, error) {
 		return nil, nil, err
 	}
 
+	// 主节点模式：为每个从节点生成代理
+	if config.IsMaster() {
+		outbounds, outTags, err = s.expandForNodes(outbounds, outTags)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	links := s.LinkService.GetLinks(&client.Links, "external", "")
 	tagNumEnable := 0
 	if len(links) > 1 {
@@ -101,6 +112,45 @@ func (s *ClashService) GetClash(subId string) (*string, []string, error) {
 	headers := util.GetHeaders(client, updateInterval)
 
 	return &resultStr, headers, nil
+}
+
+// expandForNodes 在主节点模式下，为每个在线从节点复制代理配置
+func (s *ClashService) expandForNodes(outbounds *[]map[string]interface{}, outTags *[]string) (*[]map[string]interface{}, *[]string, error) {
+	nodes, err := s.NodeService.GetEnabledOnlineNodes()
+	if err != nil || len(nodes) == 0 {
+		// 没有从节点，返回空
+		return &[]map[string]interface{}{}, &[]string{}, nil
+	}
+
+	var newOutbounds []map[string]interface{}
+	var newTags []string
+
+	for _, node := range nodes {
+		if node.ExternalHost == "" {
+			continue
+		}
+		for _, ob := range *outbounds {
+			// 复制 outbound
+			newOb := make(map[string]interface{})
+			for k, v := range ob {
+				newOb[k] = v
+			}
+			// 替换服务器地址
+			newOb["server"] = node.ExternalHost
+			if node.ExternalPort > 0 {
+				newOb["server_port"] = node.ExternalPort
+			}
+			// 更新 tag，添加节点名称
+			oldTag, _ := ob["tag"].(string)
+			newTag := fmt.Sprintf("%s-%s", node.Name, oldTag)
+			newOb["tag"] = newTag
+
+			newOutbounds = append(newOutbounds, newOb)
+			newTags = append(newTags, newTag)
+		}
+	}
+
+	return &newOutbounds, &newTags, nil
 }
 
 func (s *ClashService) getClashConfig() (string, error) {

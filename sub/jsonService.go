@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/alireza0/s-ui/config"
 	"github.com/alireza0/s-ui/database"
 	"github.com/alireza0/s-ui/database/model"
 	"github.com/alireza0/s-ui/service"
@@ -45,6 +46,7 @@ const defaultJson = `
 
 type JsonService struct {
 	service.SettingService
+	service.NodeService
 	LinkService
 }
 
@@ -59,6 +61,14 @@ func (j *JsonService) GetJson(subId string, format string) (*string, []string, e
 	outbounds, outTags, err := j.getOutbounds(client.Config, inDatas)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// 主节点模式：为每个从节点生成代理
+	if config.IsMaster() {
+		outbounds, outTags, err = j.expandForNodes(outbounds, outTags)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	links := j.LinkService.GetLinks(&client.Links, "external", "")
@@ -328,4 +338,43 @@ func (j *JsonService) pushMixed(outbounds *[]map[string]interface{}, outTags *[]
 	httpOut["tag"] = httpTag
 	*outbounds = append(*outbounds, socksOut, httpOut)
 	*outTags = append(*outTags, socksTag, httpTag)
+}
+
+// expandForNodes 在主节点模式下，为每个在线从节点复制代理配置
+func (j *JsonService) expandForNodes(outbounds *[]map[string]interface{}, outTags *[]string) (*[]map[string]interface{}, *[]string, error) {
+	nodes, err := j.NodeService.GetEnabledOnlineNodes()
+	if err != nil || len(nodes) == 0 {
+		// 没有从节点，返回空
+		return &[]map[string]interface{}{}, &[]string{}, nil
+	}
+
+	var newOutbounds []map[string]interface{}
+	var newTags []string
+
+	for _, node := range nodes {
+		if node.ExternalHost == "" {
+			continue
+		}
+		for _, ob := range *outbounds {
+			// 复制 outbound
+			newOb := make(map[string]interface{})
+			for k, v := range ob {
+				newOb[k] = v
+			}
+			// 替换服务器地址
+			newOb["server"] = node.ExternalHost
+			if node.ExternalPort > 0 {
+				newOb["server_port"] = node.ExternalPort
+			}
+			// 更新 tag，添加节点名称
+			oldTag, _ := ob["tag"].(string)
+			newTag := fmt.Sprintf("%s-%s", node.Name, oldTag)
+			newOb["tag"] = newTag
+
+			newOutbounds = append(newOutbounds, newOb)
+			newTags = append(newTags, newTag)
+		}
+	}
+
+	return &newOutbounds, &newTags, nil
 }
