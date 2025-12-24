@@ -263,10 +263,12 @@ func (h *NodeHandler) reportOnlines(c *gin.Context) {
 
 // HeartbeatRequest 心跳请求
 type HeartbeatRequest struct {
-	CPU         float64 `json:"cpu"`
-	Memory      float64 `json:"memory"`
-	Connections int     `json:"connections"`
-	Version     string  `json:"version"`
+	CPU          float64 `json:"cpu"`
+	Memory       float64 `json:"memory"`
+	Connections  int     `json:"connections"`
+	Version      string  `json:"version"`
+	ExternalHost string  `json:"externalHost"`
+	ExternalPort int     `json:"externalPort"`
 }
 
 // heartbeat 处理心跳
@@ -282,7 +284,7 @@ func (h *NodeHandler) heartbeat(c *gin.Context) {
 		return
 	}
 
-	err := h.nodeService.Heartbeat(nodeId, req.CPU, req.Memory, req.Connections, req.Version)
+	err := h.nodeService.Heartbeat(nodeId, req.CPU, req.Memory, req.Connections, req.Version, req.ExternalHost, req.ExternalPort)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

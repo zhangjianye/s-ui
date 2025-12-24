@@ -529,10 +529,12 @@ func (s *SyncService) sendHeartbeat() {
 	}
 
 	reqBody := map[string]interface{}{
-		"cpu":         cpuPercent,
-		"memory":      memPercent,
-		"connections": connections,
-		"version":     config.GetVersion(),
+		"cpu":          cpuPercent,
+		"memory":       memPercent,
+		"connections":  connections,
+		"version":      config.GetVersion(),
+		"externalHost": config.GetExternalHost(),
+		"externalPort": config.GetExternalPort(),
 	}
 
 	resp, err := s.doRequest("POST", "/node/heartbeat", reqBody, true)

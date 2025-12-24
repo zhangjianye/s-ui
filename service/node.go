@@ -272,19 +272,25 @@ func (s *NodeService) AuthenticateNode(nodeId, token string) (*model.Node, error
 // ========== 心跳和状态 ==========
 
 // Heartbeat 处理节点心跳
-func (s *NodeService) Heartbeat(nodeId string, cpu, memory float64, connections int, version string) error {
+func (s *NodeService) Heartbeat(nodeId string, cpu, memory float64, connections int, version, externalHost string, externalPort int) error {
 	db := database.GetDB()
 	systemInfo, _ := json.Marshal(map[string]interface{}{
 		"cpu":         cpu,
 		"memory":      memory,
 		"connections": connections,
 	})
-	return db.Model(&model.Node{}).Where("node_id = ?", nodeId).Updates(map[string]interface{}{
+	updates := map[string]interface{}{
 		"status":      "online",
 		"last_seen":   time.Now().Unix(),
 		"version":     version,
 		"system_info": systemInfo,
-	}).Error
+	}
+	// 更新外部地址（如果提供）
+	if externalHost != "" {
+		updates["external_host"] = externalHost
+	}
+	updates["external_port"] = externalPort
+	return db.Model(&model.Node{}).Where("node_id = ?", nodeId).Updates(updates).Error
 }
 
 // UpdateNodeStatus 更新节点状态 (定时任务调用)
