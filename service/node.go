@@ -231,6 +231,20 @@ func (s *NodeService) Save(tx *gorm.DB, act string, data json.RawMessage) error 
 		if err != nil {
 			return err
 		}
+		// 先获取节点信息
+		var node model.Node
+		if err = tx.Where("id = ?", id).First(&node).Error; err != nil {
+			return err
+		}
+		// 删除相关数据
+		tx.Where("node_id = ?", node.NodeId).Delete(&model.ClientOnline{})
+		tx.Where("node_id = ?", node.NodeId).Delete(&model.NodeStats{})
+		// 可选：重置 token 允许复用
+		tx.Model(&model.NodeToken{}).Where("used_by = ?", node.NodeId).Updates(map[string]interface{}{
+			"used":    false,
+			"used_by": "",
+		})
+		// 删除节点
 		err = tx.Where("id = ?", id).Delete(&model.Node{}).Error
 	default:
 		return common.NewErrorf("unknown action: %s", act)
