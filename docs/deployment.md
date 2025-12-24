@@ -262,31 +262,99 @@ sudo chmod +x /usr/local/s-ui/s-ui
 
 **步骤 2**: 使用邀请码注册
 
-> **注意**: `--master` 地址需要包含面板的 base path（默认为 `/app`）
-
 ```bash
 /usr/local/s-ui/s-ui --mode worker \
-  --master "https://master.example.com:2095/app" \
+  --master "https://master.example.com:2095" \
   --token "YOUR_INVITE_TOKEN" \
   --node-id "worker-hk-01"
 ```
 
 **步骤 3**: 创建从节点 systemd 服务
 
-```ini
+有两种配置方式：
+
+**方式 A: 使用环境变量（推荐）**
+
+创建环境配置文件：
+
+```bash
+sudo cat > /usr/local/s-ui/worker.env << 'EOF'
+SUI_NODE_MODE=worker
+SUI_MASTER_ADDR=https://master.example.com:2095
+SUI_NODE_TOKEN=YOUR_INVITE_TOKEN
+SUI_NODE_ID=worker-hk-01
+SUI_NODE_NAME=香港节点01
+SUI_EXTERNAL_HOST=hk.example.com
+SUI_EXTERNAL_PORT=443
+EOF
+
+# 保护配置文件（包含敏感 token）
+sudo chmod 600 /usr/local/s-ui/worker.env
+```
+
+创建 systemd 服务：
+
+```bash
+sudo cat > /etc/systemd/system/s-ui.service << 'EOF'
 [Unit]
 Description=S-UI Worker Node
 After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
 WorkingDirectory=/usr/local/s-ui/
-ExecStart=/usr/local/s-ui/s-ui --mode worker
+EnvironmentFile=/usr/local/s-ui/worker.env
+ExecStart=/usr/local/s-ui/s-ui
 Restart=on-failure
 RestartSec=10s
+LimitNOFILE=65535
 
 [Install]
 WantedBy=multi-user.target
+EOF
+```
+
+**方式 B: 使用命令行参数**
+
+```bash
+sudo cat > /etc/systemd/system/s-ui.service << 'EOF'
+[Unit]
+Description=S-UI Worker Node
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/s-ui/
+ExecStart=/usr/local/s-ui/s-ui \
+  --mode worker \
+  --master "https://master.example.com:2095" \
+  --token "YOUR_INVITE_TOKEN" \
+  --node-id "worker-hk-01" \
+  --node-name "香港节点01" \
+  --external-host "hk.example.com" \
+  --external-port 443
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+**步骤 4**: 启动服务
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable s-ui --now
+
+# 检查状态
+sudo systemctl status s-ui
+
+# 查看日志
+journalctl -u s-ui -f
 ```
 
 ### 5.5 从节点配置参数
@@ -294,7 +362,8 @@ WantedBy=multi-user.target
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--mode` | 运行模式 | `worker` |
-| `--master` | 主节点地址（含 base path） | `https://master.example.com:2095/app` |
+| `--master` | 主节点地址 | `https://master.example.com:2095` |
+| `--master-path` | API 路径前缀（默认 /app） | `/app` |
 | `--token` | 邀请码 | `abc123...` |
 | `--node-id` | 节点唯一标识 | `node-hk-01` |
 | `--node-name` | 节点显示名称 | `香港节点 01` |
@@ -391,7 +460,7 @@ services:
     restart: unless-stopped
     command: >
       ./s-ui --mode worker
-      --master https://master.example.com:2095/app
+      --master https://master.example.com:2095
       --token YOUR_INVITE_TOKEN
       --node-id worker-01
     ports:
@@ -476,6 +545,8 @@ UAP 版本支持以下用户扩展字段：
 
 ### 8.1 环境变量
 
+**通用配置：**
+
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `SUI_LOG_LEVEL` | 日志级别 | `info` |
@@ -483,6 +554,23 @@ UAP 版本支持以下用户扩展字段：
 | `SUI_BIN_FOLDER` | Sing-Box 目录 | `bin` |
 | `SUI_DB_FOLDER` | 数据库目录 | `db` |
 | `SINGBOX_API` | Sing-Box API 地址 | - |
+
+**节点配置（Worker 模式）：**
+
+> **注意**: 环境变量优先级高于命令行参数。如果同时设置，环境变量的值会覆盖命令行参数。
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `SUI_NODE_MODE` | 节点模式 | `worker` |
+| `SUI_MASTER_ADDR` | 主节点地址 | `https://master.example.com:2095` |
+| `SUI_MASTER_PATH` | API 路径前缀 | `/app` (默认) |
+| `SUI_NODE_TOKEN` | 认证令牌 | `abc123...` |
+| `SUI_NODE_ID` | 节点唯一标识 | `worker-hk-01` |
+| `SUI_NODE_NAME` | 节点显示名称 | `香港节点01` |
+| `SUI_EXTERNAL_HOST` | 外部连接地址 | `hk.example.com` |
+| `SUI_EXTERNAL_PORT` | 外部连接端口 | `443` |
+| `SUI_SYNC_CONFIG_INTERVAL` | 配置同步间隔（秒） | `60` (默认) |
+| `SUI_SYNC_STATS_INTERVAL` | 统计上报间隔（秒） | `30` (默认) |
 
 ### 8.2 命令行参数
 
@@ -493,6 +581,7 @@ Flags:
   -v                    显示版本
   --mode string         运行模式 (standalone/master/worker，默认 standalone)
   --master string       主节点地址 (worker 模式必填)
+  --master-path string  主节点 API 路径前缀 (默认 /app)
   --token string        认证令牌 (worker 模式必填)
   --node-id string      节点唯一标识 (worker 模式必填)
   --node-name string    节点显示名称 (默认使用 node-id)

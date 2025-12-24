@@ -558,10 +558,11 @@ type APIResponse struct {
 
 // doRequest 发送请求到主节点
 func (s *SyncService) doRequest(method, path string, body interface{}, auth bool) (*APIResponse, error) {
-	// 正确拼接 URL，处理 masterAddr 末尾斜杠和 path 开头斜杠
+	// 正确拼接 URL: masterAddr + masterPath + path
 	masterAddr := strings.TrimSuffix(s.masterAddr, "/")
+	masterPath := strings.Trim(config.GetMasterPath(), "/")
 	path = strings.TrimPrefix(path, "/")
-	url := masterAddr + "/" + path
+	url := masterAddr + "/" + masterPath + "/" + path
 
 	var reqBody io.Reader
 	if body != nil {

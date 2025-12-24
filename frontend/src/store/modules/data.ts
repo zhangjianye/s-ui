@@ -217,7 +217,7 @@ const Data = defineStore('Data', {
       const msg = await HttpUtils.post('api/save', {
         object: 'nodes',
         action: 'del',
-        data: JSON.stringify({ id })
+        data: JSON.stringify(id)
       })
       if (msg.success) {
         push.success({

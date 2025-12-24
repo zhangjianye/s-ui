@@ -40,6 +40,7 @@ var (
 	nodeId           string
 	nodeName         string
 	masterAddr       string
+	masterPath       string = "/app" // 主节点 API 路径前缀
 	nodeToken        string
 	externalHost     string
 	externalPort     int
@@ -117,6 +118,13 @@ func SetMasterAddr(addr string) {
 	masterAddr = addr
 }
 
+// SetMasterPath 设置主节点 API 路径前缀
+func SetMasterPath(path string) {
+	if path != "" {
+		masterPath = path
+	}
+}
+
 // SetNodeToken 设置节点 Token
 func SetNodeToken(token string) {
 	nodeToken = token
@@ -186,6 +194,14 @@ func GetMasterAddr() string {
 		return envAddr
 	}
 	return masterAddr
+}
+
+// GetMasterPath 获取主节点 API 路径前缀
+func GetMasterPath() string {
+	if envPath := os.Getenv("SUI_MASTER_PATH"); envPath != "" {
+		return envPath
+	}
+	return masterPath
 }
 
 // GetNodeToken 获取节点 Token

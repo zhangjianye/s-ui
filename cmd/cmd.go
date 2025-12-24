@@ -15,6 +15,7 @@ var (
 	showVersion  bool
 	Mode         string
 	MasterAddr   string
+	MasterPath   string
 	NodeToken    string
 	NodeId       string
 	NodeName     string
@@ -27,6 +28,7 @@ func init() {
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&Mode, "mode", "standalone", "node mode: standalone, master, worker")
 	flag.StringVar(&MasterAddr, "master", "", "master node address (required for worker mode)")
+	flag.StringVar(&MasterPath, "master-path", "/app", "master node API base path (default: /app)")
 	flag.StringVar(&NodeToken, "token", "", "node token for authentication (required for worker mode)")
 	flag.StringVar(&NodeId, "node-id", "", "unique node identifier (required for worker mode)")
 	flag.StringVar(&NodeName, "node-name", "", "node display name (defaults to node-id)")
@@ -56,6 +58,7 @@ func ParseFlags() bool {
 	// 应用节点配置
 	config.SetNodeMode(Mode)
 	config.SetMasterAddr(MasterAddr)
+	config.SetMasterPath(MasterPath)
 	config.SetNodeToken(NodeToken)
 	config.SetNodeId(NodeId)
 	config.SetNodeName(NodeName)
@@ -114,6 +117,7 @@ func ParseCmd() {
 		fmt.Println("Node Options:")
 		fmt.Println("    --mode           node mode: standalone, master, worker (default: standalone)")
 		fmt.Println("    --master         master node address (required for worker mode)")
+		fmt.Println("    --master-path    master node API base path (default: /app)")
 		fmt.Println("    --token          node token for authentication (required for worker mode)")
 		fmt.Println("    --node-id        unique node identifier (required for worker mode)")
 		fmt.Println("    --node-name      node display name (defaults to node-id)")

@@ -37,6 +37,8 @@ func (c *CronJob) Start(loc *time.Location, trafficAge int) error {
 		c.cron.AddJob("@every 1m", NewTimeDepleteJob())
 		// 流量/时长重置 (每天)
 		c.cron.AddJob("@daily", NewResetJob())
+		// 节点状态检查 (每 30 秒，仅主节点)
+		c.cron.AddJob("@every 30s", NewNodeStatusJob())
 	}()
 
 	return nil
