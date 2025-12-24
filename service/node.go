@@ -280,17 +280,20 @@ func (s *NodeService) Heartbeat(nodeId string, cpu, memory float64, connections 
 		"connections": connections,
 	})
 	updates := map[string]interface{}{
-		"status":      "online",
-		"last_seen":   time.Now().Unix(),
-		"version":     version,
-		"system_info": systemInfo,
+		"status":        "online",
+		"last_seen":     time.Now().Unix(),
+		"version":       version,
+		"system_info":   systemInfo,
+		"external_port": externalPort,
 	}
 	// 更新外部地址（如果提供）
 	if externalHost != "" {
 		updates["external_host"] = externalHost
 	}
-	updates["external_port"] = externalPort
-	return db.Model(&model.Node{}).Where("node_id = ?", nodeId).Updates(updates).Error
+	// 使用 Select 强制更新 external_port（即使为 0）
+	return db.Model(&model.Node{}).Where("node_id = ?", nodeId).
+		Select("status", "last_seen", "version", "system_info", "external_port", "external_host").
+		Updates(updates).Error
 }
 
 // UpdateNodeStatus 更新节点状态 (定时任务调用)
