@@ -262,16 +262,7 @@ sudo cp s-ui /usr/local/s-ui/
 sudo chmod +x /usr/local/s-ui/s-ui
 ```
 
-**步骤 2**: 使用邀请码注册
-
-```bash
-/usr/local/s-ui/s-ui --mode worker \
-  --master "https://master.example.com:2095" \
-  --token "YOUR_INVITE_TOKEN" \
-  --node-id "worker-hk-01"
-```
-
-**步骤 3**: 创建从节点 systemd 服务
+**步骤 2**: 创建从节点 systemd 服务
 
 有两种配置方式：
 
@@ -346,7 +337,7 @@ WantedBy=multi-user.target
 EOF
 ```
 
-**步骤 4**: 启动服务
+**步骤 3**: 启动服务
 
 ```bash
 sudo systemctl daemon-reload
