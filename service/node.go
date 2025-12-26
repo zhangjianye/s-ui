@@ -121,7 +121,8 @@ func (s *NodeService) GetNodeByNodeId(nodeId string) (*model.Node, error) {
 func (s *NodeService) GetEnabledOnlineNodes() ([]model.Node, error) {
 	db := database.GetDB()
 	var nodes []model.Node
-	err := db.Where("enable = ? AND status = ?", true, "online").Find(&nodes).Error
+	// 使用 1 而不是 true，因为 SQLite 存储 boolean 为 0/1
+	err := db.Where("enable = ? AND status = ?", 1, "online").Find(&nodes).Error
 	if err != nil {
 		return nil, err
 	}
