@@ -51,7 +51,7 @@ func FillOutJson(i *model.Inbound, hostname string) error {
 		hysteria2Out(&outJson, *inbound)
 	case "tuic":
 		tuicOut(&outJson, *inbound)
-	case "vless":
+	case "vless", "uap":
 		vlessOut(&outJson, *inbound)
 	case "trojan":
 		trojanOut(&outJson, *inbound)
